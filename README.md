@@ -1,6 +1,7 @@
 # Towards Real-Time Path Tracing
 
 ## Getting Started
+
 ```bash
 cd src
 mkdir build
