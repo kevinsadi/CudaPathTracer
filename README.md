@@ -7,7 +7,7 @@ mkdir build
 cd build
 cmake ..
 make
-/RayTracing
+./RayTracing
 ```
 
 Now, view the output image in the `out` directory.
