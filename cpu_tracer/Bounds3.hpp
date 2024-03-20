@@ -93,7 +93,7 @@ class Bounds3
 inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
                                 const std::array<int, 3>& dirIsNeg) const
 {
-    // // dirIsNeg[0] = invDir.x < 0;
+    // dirIsNeg[0] = invDir.x < 0;
     double tMin = ((dirIsNeg[0] ? pMax.x : pMin.x) - ray.origin.x) * invDir.x;
     double tMax = (((1-dirIsNeg[0]) ? pMax.x : pMin.x) - ray.origin.x) * invDir.x;
     double tyMin = ((dirIsNeg[1] ? pMax.y : pMin.y) - ray.origin.y) * invDir.y;
