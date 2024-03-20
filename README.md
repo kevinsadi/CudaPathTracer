@@ -27,3 +27,24 @@ make
 Now, view the output image in the `out` directory.
 
 ## Features
+
+TODO 
+
+## Roadmap
+
+### Parallelism
+
+- [x] CPU Path Tracer
+- Naive GPU Path Tracer
+  - [ ] Building BVH on GPU
+  - [ ] Thread-per-pixel parallelism
+- GPU Path Tracer
+  - [ ] Thread-per-path parallelism
+- Work-Efficient GPU Path Tracer
+  - [ ] Thread-per-ray parallelism
+
+### Rendering
+
+- [x] Diffuse Surfaces
+
+TODO
