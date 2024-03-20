@@ -151,7 +151,7 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
         {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
-                return 0.5f / M_PI;
+                return 0.5f * M_1_PI;
             else
                 return 0.0f;
             break;
@@ -166,7 +166,7 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             // calculate the contribution of diffuse   model
             float cosalpha = dotProduct(N, wo);
             if (cosalpha > 0.0f) {
-                Vector3f diffuse = Kd / M_PI;
+                Vector3f diffuse = Kd * M_1_PI;
                 return diffuse;
             }
             else

@@ -3,8 +3,10 @@
 #include <cmath>
 #include <random>
 
-#undef M_PI
+#undef M_PI // in math.h
 #define M_PI 3.141592653589793f
+#undef M_1_PI // in math.h
+#define M_1_PI 0.3183098861837907f
 
 extern const float  EPSILON;
 const float kInfinity = std::numeric_limits<float>::max();
