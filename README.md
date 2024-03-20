@@ -1,5 +1,10 @@
 # Towards Real-Time Path Tracing
 
+## Environment
+
+- cuda/11.7.0-7sdye3
+- Nvidia V100 GPU
+
 ## Getting Started
 
 - CPU Tracer
@@ -28,7 +33,7 @@ Now, view the output image in the `out` directory.
 
 ## Features
 
-TODO 
+TODO
 
 ## Roadmap
 
@@ -37,11 +42,11 @@ TODO
 - [x] CPU Path Tracer
 - Naive GPU Path Tracer
   - [ ] Building BVH on GPU
-  - [ ] Thread-per-pixel parallelism
+  - [ ] Thread-per-pixel parallelism (# of threads = # of pixels)
 - GPU Path Tracer
-  - [ ] Thread-per-path parallelism
+  - [ ] Thread-per-path parallelism (# of threads = # of paths = # of pixels * SPP)
 - Work-Efficient GPU Path Tracer
-  - [ ] Thread-per-ray parallelism
+  - [ ] Thread-per-ray parallelism (fixed # of threads)
 
 ### Rendering
 
