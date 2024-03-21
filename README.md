@@ -38,6 +38,7 @@ TODO
 ## Roadmap
 
 - [x] CPU Path Tracer
+- [x] Anti-Aliasing by Jittered Sampling
 - [ ] Construct GPU-friendly BVH
 
 ### GPU Parallelism
