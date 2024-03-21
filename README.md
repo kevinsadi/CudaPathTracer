@@ -37,11 +37,12 @@ TODO
 
 ## Roadmap
 
-### Parallelism
-
 - [x] CPU Path Tracer
+- [ ] Construct GPU-friendly BVH
+
+### GPU Parallelism
+
 - Naive GPU Path Tracer
-  - [ ] Building BVH on GPU
   - [ ] Thread-per-pixel parallelism (# of threads = # of pixels)
 - GPU Path Tracer
   - [ ] Thread-per-path parallelism (# of threads = # of paths = # of pixels * SPP)
@@ -52,4 +53,11 @@ TODO
 
 - [x] Diffuse Surfaces
 
-TODO
+### Acceleration Structures
+
+- [x] Naive BVH
+- [ ] SAH BVH
+
+## Future Work
+
+- [ ] Building BVH on GPU (LBVH <https://developer.nvidia.com/blog/thinking-parallel-part-iii-tree-construction-gpu/>)

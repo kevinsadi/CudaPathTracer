@@ -29,13 +29,13 @@ void Renderer::Render(const Scene& scene)
     for (uint32_t j = 0; j < scene.height; ++j) {
         for (uint32_t i = 0; i < scene.width; ++i) {
             // generate primary ray direction
-            float x = (2 * (i + 0.5) / (float)scene.width - 1) *
-                      imageAspectRatio * scale;
-            float y = (1 - 2 * (j + 0.5) / (float)scene.height) * scale;
-
-            Vector3f dir = normalize(Vector3f(-x, y, 1));
 #pragma omp parallel for
             for (int k = 0; k < spp; k++){
+                // jitter sampling for anti-aliasing
+                float bias = get_random_float();
+                float x = (2 * (i + bias) / (float)scene.width - 1) * imageAspectRatio * scale;
+                float y = (1 - 2 * (j + bias) / (float)scene.height) * scale;
+                Vector3f dir = normalize(Vector3f(-x, y, 1));
                 framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / spp;  
             }
             m++;
