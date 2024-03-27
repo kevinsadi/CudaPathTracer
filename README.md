@@ -44,6 +44,7 @@ TODO
 - [x] CPU Path Tracer
 - [x] Anti-Aliasing by Jittered Sampling
 - [ ] Construct GPU-friendly BVH
+- [ ] Self-defined material description file
 
 ### GPU Parallelism
 
@@ -56,7 +57,10 @@ TODO
 
 ### Rendering
 
-- [x] Diffuse Surfaces
+- [x] Naive Diffuse Surfaces
+- [ ] Lambert Material
+- [ ] Metal Material
+- [ ] Dielectric Material
 
 ### Acceleration Structures
 
