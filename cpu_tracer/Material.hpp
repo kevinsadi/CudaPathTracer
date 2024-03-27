@@ -7,7 +7,7 @@
 
 #include "Vector.hpp"
 
-enum MaterialType { DIFFUSE};
+enum MaterialType { Lambert, Metal, Dielectric };
 
 class Material{
 private:
@@ -87,14 +87,14 @@ private:
 
 public:
     MaterialType m_type;
-    //Vector3f m_color;
-    Vector3f m_emission;
+    Vector3f m_albedo;
+    Vector3f m_emissive;
     float ior;
     Vector3f Kd, Ks;
     float specularExponent;
     //Texture tex;
 
-    inline Material(MaterialType t=DIFFUSE, Vector3f e=Vector3f(0,0,0));
+    inline Material(MaterialType t=Lambert, Vector3f e=Vector3f(0,0,0));
     inline MaterialType getType();
     //inline Vector3f getColor();
     inline Vector3f getColorAt(double u, double v);
@@ -113,14 +113,14 @@ public:
 Material::Material(MaterialType t, Vector3f e){
     m_type = t;
     //m_color = c;
-    m_emission = e;
+    m_emissive = e;
 }
 
 MaterialType Material::getType(){return m_type;}
 ///Vector3f Material::getColor(){return m_color;}
-Vector3f Material::getEmission() {return m_emission;}
+Vector3f Material::getEmission() {return m_emissive;}
 bool Material::hasEmission() {
-    if (m_emission.norm() > EPSILON) return true;
+    if (m_emissive.norm() > EPSILON) return true;
     else return false;
 }
 
@@ -131,7 +131,7 @@ Vector3f Material::getColorAt(double u, double v) {
 
 Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
     switch(m_type){
-        case DIFFUSE:
+        case Lambert:
         {
             // uniform sample on the hemisphere
             float x_1 = get_random_float(), x_2 = get_random_float();
@@ -147,7 +147,7 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
 
 float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     switch(m_type){
-        case DIFFUSE:
+        case Lambert:
         {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
@@ -161,7 +161,7 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
 
 Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
     switch(m_type){
-        case DIFFUSE:
+        case Lambert:
         {
             // calculate the contribution of diffuse   model
             float cosalpha = dotProduct(N, wo);
