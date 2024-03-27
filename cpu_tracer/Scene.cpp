@@ -76,8 +76,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     Vector3f p = hit.coords;
     Vector3f x = light_sample.coords;
     // outgoing radiance direction at p, which is typically the opposite of ray direction
-    // but in this case, we can just use ray direction, pointing inwards
-    Vector3f wo = ray.direction;
+    Vector3f wo = -ray.direction;
     // incident radiance direction at p, poting outwards
     Vector3f ws = (x - p).normalized(); 
     // shadow ray (I abuse the term in ray tracing), testing if this light is blocked
@@ -86,7 +85,7 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
     if (hit2.distance - (x - p).norm() > -epsilon) {
         // hit the light, no blockades
         Vector3f emit = light_sample.emit;
-        Vector3f f_r = hit.m->eval(wo, ws, hit.normal);
+        Vector3f f_r = hit.m->eval(ws, wo, hit.normal);
         float cos_theta = std::max(0.0f, dotProduct(hit.normal, ws));
         float cos_theta_prime = std::max(0.0f, dotProduct(light_sample.normal, -ws));
         float r2 = dotProduct(x - p, x - p);
@@ -99,10 +98,10 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const
         Vector3f wi = hit.m->sample(wo, hit.normal).normalized();
         Ray ray_indir(p, wi);
         Intersection hit_indir = Scene::intersect(ray_indir);
-        float pdf_indir = hit.m->pdf(wo, wi, hit.normal);
+        float pdf_indir = hit.m->pdf(wi, wo, hit.normal);
         // if the ray hits a non-emissive object, we can continue
         if (hit_indir.happened && !hit_indir.m->hasEmission() && pdf_indir > epsilon) {
-            Vector3f f_r = hit.m->eval(wo, wi, hit.normal);
+            Vector3f f_r = hit.m->eval(wi, wo, hit.normal);
             float cos_theta = std::max(0.0f, dotProduct(hit.normal, wi));
             L_indir = Scene::castRay(ray_indir, depth + 1) * f_r * cos_theta / pdf_indir / RussianRoulette;
         }
