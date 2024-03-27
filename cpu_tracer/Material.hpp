@@ -89,10 +89,7 @@ public:
     MaterialType m_type;
     Vector3f m_albedo;
     Vector3f m_emissive;
-    float ior;
-    Vector3f Kd, Ks;
-    float specularExponent;
-    //Texture tex;
+    float m_ior, roughness;
 
     inline Material(MaterialType t=Lambert, Vector3f e=Vector3f(0,0,0));
     inline MaterialType getType();
@@ -110,11 +107,7 @@ public:
 
 };
 
-Material::Material(MaterialType t, Vector3f e){
-    m_type = t;
-    //m_color = c;
-    m_emissive = e;
-}
+Material::Material(MaterialType t, Vector3f e): m_type(t), m_emissive(e) {}
 
 MaterialType Material::getType(){return m_type;}
 ///Vector3f Material::getColor(){return m_color;}
@@ -142,6 +135,12 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
             
             break;
         }
+        case Metal:
+        case Dielectric:
+        {
+            return Vector3f(0.0f);
+            break;
+        }
     }
 }
 
@@ -156,6 +155,12 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
                 return 0.0f;
             break;
         }
+        case Metal:
+        case Dielectric:
+        {
+            return 0.0f;
+            break;
+        }
     }
 }
 
@@ -166,11 +171,17 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             // calculate the contribution of diffuse   model
             float cosalpha = dotProduct(N, wo);
             if (cosalpha > 0.0f) {
-                Vector3f diffuse = Kd * M_1_PI;
+                Vector3f diffuse = m_albedo * M_1_PI;
                 return diffuse;
             }
             else
                 return Vector3f(0.0f);
+            break;
+        }
+        case Metal:
+        case Dielectric:
+        {
+            return Vector3f(0.0f);
             break;
         }
     }
