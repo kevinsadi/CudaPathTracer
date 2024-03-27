@@ -62,6 +62,9 @@ static const double epsilon = 0.0005;
 // Implementation of Path Tracing
 Vector3f Scene::castRay(const Ray &ray, int depth) const
 {
+    if (depth > this->maxDepth) 
+        return Vector3f(0);
+    
     Intersection hit = Scene::intersect(ray);
     if (!hit.happened) 
         return Vector3f(0);

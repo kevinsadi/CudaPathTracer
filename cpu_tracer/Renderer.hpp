@@ -15,6 +15,7 @@ struct hit_payload
 class Renderer
 {
 public:
+    int spp = 32;
     void Render(const Scene& scene);
 
 private:

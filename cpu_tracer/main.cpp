@@ -1,7 +1,7 @@
 #include "Renderer.hpp"
 #include "Scene.hpp"
-#include "Triangle.hpp"
 #include "Sphere.hpp"
+#include "Triangle.hpp"
 #include "Vector.hpp"
 #include "global.hpp"
 #include <chrono>
@@ -10,21 +10,27 @@
 // lights) as well as set the options for the render (image width and height,
 // maximum recursion depth, field-of-view, etc.). We then call the render
 // function().
-int main(int argc, char** argv)
-{
+int main(int argc, char **argv) {
+    int spp = 32;
+    int maxDepth = 10;
+    // read SPP & maxDepth from command line
+    if (argc > 1)
+        spp = atoi(argv[1]);
+    if (argc > 2)
+        maxDepth = atoi(argv[2]);
 
     // Change the definition here to change resolution
     // Scene scene(784, 784);
     Scene scene(512, 512);
+    scene.maxDepth = maxDepth;
 
-
-    Material* red = new Material(DIFFUSE, Vector3f(0.0f));
+    Material *red = new Material(DIFFUSE, Vector3f(0.0f));
     red->Kd = Vector3f(0.63f, 0.065f, 0.05f);
-    Material* green = new Material(DIFFUSE, Vector3f(0.0f));
+    Material *green = new Material(DIFFUSE, Vector3f(0.0f));
     green->Kd = Vector3f(0.14f, 0.45f, 0.091f);
-    Material* white = new Material(DIFFUSE, Vector3f(0.0f));
+    Material *white = new Material(DIFFUSE, Vector3f(0.0f));
     white->Kd = Vector3f(0.725f, 0.71f, 0.68f);
-    Material* light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f+0.058f, 0.747f+0.258f, 0.747f) + 15.6f * Vector3f(0.740f+0.287f,0.740f+0.160f,0.740f) + 18.4f *Vector3f(0.737f+0.642f,0.737f+0.159f,0.737f)));
+    Material *light = new Material(DIFFUSE, (8.0f * Vector3f(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * Vector3f(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * Vector3f(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
     light->Kd = Vector3f(0.65f);
 
     MeshTriangle floor("../../models/cornellbox/floor.obj", white);
@@ -44,6 +50,7 @@ int main(int argc, char** argv)
     scene.buildBVH();
 
     Renderer r;
+    r.spp = spp;
 
     auto start = std::chrono::system_clock::now();
     r.Render(scene);

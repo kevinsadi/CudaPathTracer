@@ -26,7 +26,11 @@ mkdir build
 cd build
 cmake ..
 make
-./RayTracing
+./RayTracing # default SPP = 32, MaxDepth = 50
+# or
+./RayTracing <SPP>
+# or
+./RayTracing <SPP> <MaxDepth>
 ```
 
 Now, view the output image in the `out` directory.
