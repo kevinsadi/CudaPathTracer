@@ -72,16 +72,16 @@ public:
     }
     Vector3f evalDiffuseColor(const Vector2f&) const override;
     Bounds3 getBounds() override;
-    void Sample(Intersection &pos, float &pdf){
+    void Sample(Intersection &pos, float &pdf) override {
         float x = std::sqrt(get_random_float()), y = get_random_float();
         pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
         pos.normal = this->normal;
         pdf = 1.0f / area;
     }
-    float getArea(){
+    float getArea() override {
         return area;
     }
-    bool hasEmit(){
+    bool hasEmit() override {
         return m->hasEmission();
     }
 };
@@ -135,9 +135,9 @@ public:
         bvh = new BVHAccel(ptrs);
     }
 
-    bool intersect(const Ray& ray) { return true; }
+    bool intersect(const Ray& ray) override { return true; }
 
-    bool intersect(const Ray& ray, float& tnear, uint32_t& index) const
+    bool intersect(const Ray& ray, float& tnear, uint32_t& index) const override
     {
         bool intersect = false;
         for (uint32_t k = 0; k < numTriangles; ++k) {
@@ -157,11 +157,11 @@ public:
         return intersect;
     }
 
-    Bounds3 getBounds() { return bounding_box; }
+    Bounds3 getBounds() override { return bounding_box; }
 
     void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
                               const uint32_t& index, const Vector2f& uv,
-                              Vector3f& N, Vector2f& st) const
+                              Vector3f& N, Vector2f& st) const override
     {
         const Vector3f& v0 = vertices[vertexIndex[index * 3]];
         const Vector3f& v1 = vertices[vertexIndex[index * 3 + 1]];
@@ -175,7 +175,7 @@ public:
         st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
     }
 
-    Vector3f evalDiffuseColor(const Vector2f& st) const
+    Vector3f evalDiffuseColor(const Vector2f& st) const override
     {
         float scale = 5;
         float pattern =
@@ -184,7 +184,7 @@ public:
                     Vector3f(0.937, 0.937, 0.231), pattern);
     }
 
-    Intersection getIntersection(Ray ray)
+    Intersection getIntersection(Ray ray) override
     {
         Intersection intersec;
 
@@ -195,14 +195,14 @@ public:
         return intersec;
     }
     
-    void Sample(Intersection &pos, float &pdf){
+    void Sample(Intersection &pos, float &pdf) override {
         bvh->Sample(pos, pdf);
         pos.emit = m->getEmission();
     }
-    float getArea(){
+    float getArea() override {
         return area;
     }
-    bool hasEmit(){
+    bool hasEmit() override {
         return m->hasEmission();
     }
 
