@@ -3,6 +3,8 @@ project(RayTracing)
 
 set(CMAKE_CXX_STANDARD 17)
 
+find_package(OpenMP REQUIRED)
+
 # Set the compiler to clang++ from LLVM
 set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
 
@@ -13,3 +15,4 @@ add_executable(RayTracing main.cpp Object.hpp Vector.cpp Vector.hpp Sphere.hpp g
         Scene.hpp Light.hpp AreaLight.hpp BVH.cpp BVH.hpp Bounds3.hpp Ray.hpp Material.hpp Intersection.hpp
         Renderer.cpp Renderer.hpp)
         
+target_link_libraries(RayTracing PRIVATE OpenMP::OpenMP_CXX)

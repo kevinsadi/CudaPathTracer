@@ -49,6 +49,12 @@ int main(int argc, char **argv) {
 
     scene.buildBVH();
 
+#if defined(_OPENMP)
+    std::cout << "OpenMP: Enabled\n";
+#else
+    std::cout << "OpenMP: Disabled\n";
+#endif
+
     Renderer r;
     r.spp = spp;
 
