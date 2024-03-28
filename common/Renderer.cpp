@@ -41,6 +41,4 @@ void Renderer::Render(const Scene& scene)
         UpdateProgress(j / (float)scene.height);
     }
     UpdateProgress(1.f);
-
-    this->framebuffer = framebuffer;
 }

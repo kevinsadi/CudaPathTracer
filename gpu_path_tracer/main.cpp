@@ -36,7 +36,7 @@ int main(int argc, char** argv) {
     r.Render(scene);
     auto stop = std::chrono::system_clock::now();
 
-    Utility::SavePPM("out/cpu/" + scene.name + ".ppm", r.framebuffer, scene.width, scene.height);
+    Utility::SavePPM("out/gpu/" + scene.name + ".ppm", r.framebuffer, scene.width, scene.height);
 
     std::cout << "Render complete: \n";
     std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::hours>(stop - start).count() << " hours\n";
