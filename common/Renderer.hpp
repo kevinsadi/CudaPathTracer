@@ -1,9 +1,9 @@
 //
 // Created by goksu on 2/25/20.
 //
+#pragma once
 #include "Scene.hpp"
 
-#pragma once
 struct hit_payload
 {
     float tNear;
@@ -16,6 +16,7 @@ class Renderer
 {
 public:
     int spp = 32;
+    std::vector<Vector3f> framebuffer;
     void Render(const Scene& scene);
 
 private:

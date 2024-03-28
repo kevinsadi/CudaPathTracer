@@ -3,6 +3,8 @@
 // https://github.com/Bly7/OBJ-Loader
 // Use the MIT license.
 
+// @Candong: This header-only file can only be included in one .cpp file, 
+// otherwise it will cause multiple definition error.
 #pragma once
 
 #include <optional>

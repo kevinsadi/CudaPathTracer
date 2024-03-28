@@ -1,8 +1,8 @@
 //
 // Created by Göksu Güvendiren on 2019-05-14.
 //
-
 #include "Scene.hpp"
+#include "Triangle.hpp"
 
 void Scene::buildBVH() {
     printf(" - Generating BVH...\n\n");
@@ -119,4 +119,46 @@ Vector3f Scene::castRay(const Ray &ray, int depth) const {
     }
 
     return radiance;
+}
+
+Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
+{
+    if (sceneId == Scene::BuiltinScene::CornellBox)
+    {
+        Scene scene(512, 512);
+        scene.name = "Cornell Box";
+        scene.maxDepth = maxDepth;
+        scene.camPos = Vector3f(278, 273, -800);
+
+        Material* red = new Material(Lambert);
+        red->m_albedo = Vector3f(0.63f, 0.065f, 0.05f);
+        Material* green = new Material(Lambert);
+        green->m_albedo = Vector3f(0.14f, 0.45f, 0.091f);
+        Material* white = new Material(Lambert);
+        white->m_albedo = Vector3f(0.725f, 0.71f, 0.68f);
+        Material* light = new Material(Lambert, (8.0f * Vector3f(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * Vector3f(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * Vector3f(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
+        light->m_albedo = Vector3f(0.65f);
+
+        auto floor = new MeshTriangle("models/cornellbox/floor.obj", white);
+        auto shortbox = new MeshTriangle("models/cornellbox/shortbox.obj", white);
+        auto tallbox = new MeshTriangle("models/cornellbox/tallbox.obj", white);
+        auto left = new MeshTriangle("models/cornellbox/left.obj", red);
+        auto right = new MeshTriangle("models/cornellbox/right.obj", green);
+        auto light_ = new MeshTriangle("models/cornellbox/light.obj", light);
+
+        scene.Add(floor);
+        scene.Add(shortbox);
+        scene.Add(tallbox);
+        scene.Add(left);
+        scene.Add(right);
+        scene.Add(light_);
+
+        scene.buildBVH();
+
+        return scene; // RVO will optimize this
+    }
+    else
+    {
+        throw std::runtime_error("Unsupported sceneId");
+    }
 }
