@@ -4,7 +4,7 @@ project(RayTracing)
 set(CMAKE_CXX_STANDARD 17)
 
 # Add the compile flags
-set(CMAKE_CXX_FLAGS "-O3")
+set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -O3")
 
 if (APPLE)
     set(CMAKE_C_COMPILER "/usr/local/opt/llvm/bin/clang")
