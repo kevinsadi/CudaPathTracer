@@ -23,6 +23,7 @@ public:
     virtual Vector3f evalDiffuseColor(const Vector2f &) const =0;
     virtual Bounds3 getBounds()=0;
     virtual float getArea()=0;
+    // Sample a point on the surface of the object, used for area light
     virtual void Sample(Intersection &pos, float &pdf)=0;
     virtual bool hasEmit()=0;
 };

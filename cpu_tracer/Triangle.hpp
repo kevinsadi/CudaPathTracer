@@ -72,6 +72,7 @@ public:
     }
     Vector3f evalDiffuseColor(const Vector2f&) const override;
     Bounds3 getBounds() override;
+    // Sample a point on the surface of the object, used for area light
     void Sample(Intersection &pos, float &pdf) override {
         float x = std::sqrt(get_random_float()), y = get_random_float();
         pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
@@ -194,7 +195,7 @@ public:
 
         return intersec;
     }
-    
+    // Sample a point on the surface of the object, used for area light
     void Sample(Intersection &pos, float &pdf) override {
         bvh->Sample(pos, pdf);
         pos.emit = m->getEmission();
