@@ -7,17 +7,22 @@
 
 ## Getting Started
 
-In one of the above directories, run the following commands:
-
 ```bash
 mkdir build
 cd build
 cmake ..
-make # if Linux or Mac
-cmake --build . # if Windows
-# by default it will build both cpu_path_tracer and gpu_patch_tracer, you can specify the target you want
+```
+### Linux or Mac
+```bash
+make
+```
+### Windows
+```bash
+cmake --build .
+```
 
-# [Attention] run the program from root, for example
+Now, back to the root directory.
+```bash
 ./build/cpu_path_tracer/Debug/cpu_path_tracer # default SPP = 32, MaxDepth = 50
 # or
 ./build/cpu_path_tracer/Debug/cpu_path_tracer <SPP>
@@ -25,7 +30,7 @@ cmake --build . # if Windows
 ./build/cpu_path_tracer/Debug/cpu_path_tracer <SPP> <MaxDepth>
 ```
 
-Now, view the output image in the `~/out` directory.
+Now, view the output image in the `out` directory at root.
 
 ## Features
 
