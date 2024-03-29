@@ -11,10 +11,14 @@
 #include "Ray.hpp"
 #include "Vector.hpp"
 #include <vector>
+#include <string>
 
 class Scene {
 public:
     // setting up options
+    std::string name = "default";
+    // todo: consider using a camera class to to store these options
+    Vector3f camPos = Vector3f(0, 0, 0);
     int width = 1280;
     int height = 960;
     double fov = 40;
@@ -48,4 +52,9 @@ public:
     Vector3f reflect(const Vector3f &I, const Vector3f &N) const {
         return I - 2 * dotProduct(I, N) * N;
     }
+
+    enum BuiltinScene {
+        CornellBox,
+    };
+    static Scene CreateBuiltinScene(BuiltinScene sceneId, int maxDepth);
 };

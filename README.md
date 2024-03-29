@@ -7,33 +7,25 @@
 
 ## Getting Started
 
-- CPU Tracer
-
-```bash
-cd cpu_tracer
-```
-
-- GPU Tracer
-
-```bash
-cd gpu_tracer
-```
-
 In one of the above directories, run the following commands:
 
 ```bash
 mkdir build
 cd build
 cmake ..
-make
-./RayTracing # default SPP = 32, MaxDepth = 50
+make # if Linux or Mac
+cmake --build . # if Windows
+# by default it will build both cpu_path_tracer and gpu_patch_tracer, you can specify the target you want
+
+# [Attention] run the program from root, for example
+./build/cpu_path_tracer/Debug/cpu_path_tracer # default SPP = 32, MaxDepth = 50
 # or
-./RayTracing <SPP>
+./build/cpu_path_tracer/Debug/cpu_path_tracer <SPP>
 # or
-./RayTracing <SPP> <MaxDepth>
+./build/cpu_path_tracer/Debug/cpu_path_tracer <SPP> <MaxDepth>
 ```
 
-Now, view the output image in the `out` directory.
+Now, view the output image in the `~/out` directory.
 
 ## Features
 
