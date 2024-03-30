@@ -5,6 +5,11 @@ void Utility::SavePPM(const std::string& path, const std::vector<Vector3f>& fram
 {
     // save the final render to file
     FILE* fp = fopen(path.c_str(), "wb");
+    if (!fp) {
+        std::cerr << "Failed to open file '" << path << "'. Error: " << std::strerror(errno) << std::endl;
+
+    }
+
     (void)fprintf(fp, "P6\n%d %d\n255\n", width, height);
     for (auto i = 0; i < height * width; ++i) {
         static unsigned char color[3];

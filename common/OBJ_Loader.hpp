@@ -13,6 +13,8 @@
 #include <string>
 #include <fstream>
 #include <math.h>
+#include <filesystem>
+
 
 // Print progress to console while loading (large models)
 //#define OBJL_CONSOLE_OUTPUT
@@ -434,6 +436,12 @@ namespace objl
 
 
             std::ifstream file(Path);
+
+            if (!file) {
+                std::cout << "cannot load file: " << Path << std::endl;
+                std::filesystem::path cwd = std::filesystem::current_path();
+                std::cout << "Current Working Directory: " << cwd << std::endl;
+            }
 
             if (!file.is_open())
                 return false;
