@@ -17,7 +17,7 @@ class Renderer
 public:
     int spp = 32;
     std::vector<Vector3f> framebuffer;
-    void Render(const Scene& scene);
+    virtual void Render(const Scene& scene);
 
 private:
 };
