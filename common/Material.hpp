@@ -1,191 +1,271 @@
-//
-// Created by LEI XU on 5/16/19.
-//
+#pragma once
 
-#ifndef RAYTRACING_MATERIAL_H
-#define RAYTRACING_MATERIAL_H
+#include <glm/glm.hpp>
+#include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/intersect.hpp>
 
-#include "Vector.hpp"
 #include "MathUtils.hpp"
+#include "CudaPortable.hpp"
 
-enum MaterialType { Lambert, Metal, Dielectric };
+#define MATERIAL_DIELECTRIC_USE_SCHLICK_APPROX false
 
-class Material{
-private:
+#define NullTextureId -1
+#define ProcTextureId -2
+#define ProceduralTexId -2
+#define InvalidPdf -1.f
 
-    // Compute reflection direction
-    Vector3f reflect(const Vector3f &I, const Vector3f &N) const
-    {
-        return I - 2 * dotProduct(I, N) * N;
-    }
+enum BSDFSampleType {
+    Diffuse = 1 << 0,
+    Glossy = 1 << 1,
+    Specular = 1 << 2,
 
-    // Compute refraction direction using Snell's law
-    //
-    // We need to handle with care the two possible situations:
-    //
-    //    - When the ray is inside the object
-    //
-    //    - When the ray is outside.
-    //
-    // If the ray is outside, you need to make cosi positive cosi = -N.I
-    //
-    // If the ray is inside, you need to invert the refractive indices and negate the normal N
-    Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior) const
-    {
-        float cosi = clamp(-1, 1, dotProduct(I, N));
-        float etai = 1, etat = ior;
-        Vector3f n = N;
-        if (cosi < 0) { cosi = -cosi; } else { std::swap(etai, etat); n= -N; }
-        float eta = etai / etat;
-        float k = 1 - eta * eta * (1 - cosi * cosi);
-        return k < 0 ? 0 : eta * I + (eta * cosi - sqrtf(k)) * n;
-    }
+    Reflection = 1 << 4,
+    Transmission = 1 << 5,
 
-    // Compute Fresnel equation
-    //
-    // \param I is the incident view direction
-    //
-    // \param N is the normal at the intersection point
-    //
-    // \param ior is the material refractive index
-    //
-    // \param[out] kr is the amount of light reflected
-    void fresnel(const Vector3f &I, const Vector3f &N, const float &ior, float &kr) const
-    {
-        float cosi = clamp(-1, 1, dotProduct(I, N));
-        float etai = 1, etat = ior;
-        if (cosi > 0) {  std::swap(etai, etat); }
-        // Compute sini using Snell's law
-        float sint = etai / etat * sqrtf(std::max(0.f, 1 - cosi * cosi));
-        // Total internal reflection
-        if (sint >= 1) {
-            kr = 1;
-        }
-        else {
-            float cost = sqrtf(std::max(0.f, 1 - sint * sint));
-            cosi = fabsf(cosi);
-            float Rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
-            float Rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
-            kr = (Rs * Rs + Rp * Rp) / 2;
-        }
-        // As a consequence of the conservation of energy, transmittance is given by:
-        // kt = 1 - kr;
-    }
-
-    Vector3f toWorld(const Vector3f &a, const Vector3f &N){
-        Vector3f B, C;
-        if (std::fabs(N.x) > std::fabs(N.y)){
-            float invLen = 1.0f / std::sqrt(N.x * N.x + N.z * N.z);
-            C = Vector3f(N.z * invLen, 0.0f, -N.x *invLen);
-        }
-        else {
-            float invLen = 1.0f / std::sqrt(N.y * N.y + N.z * N.z);
-            C = Vector3f(0.0f, N.z * invLen, -N.y *invLen);
-        }
-        B = crossProduct(C, N);
-        return a.x * B + a.y * C + a.z * N;
-    }
-
-public:
-    MaterialType m_type;
-    Vector3f m_albedo;
-    Vector3f m_emissive;
-    float m_ior, roughness;
-
-    inline Material(MaterialType t=Lambert, Vector3f e=Vector3f(0,0,0));
-    inline MaterialType getType();
-    //inline Vector3f getColor();
-    inline Vector3f getColorAt(double u, double v);
-    inline Vector3f getEmission();
-    inline bool hasEmission();
-
-    // sample a ray by Material properties
-    inline Vector3f sample(const Vector3f &wi, const Vector3f &N);
-    // given a ray, calculate the PdF of this ray
-    inline float pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
-    // given a ray, calculate the contribution of this ray
-    inline Vector3f eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
-
+    Invalid = 1 << 15
 };
 
-Material::Material(MaterialType t, Vector3f e): m_type(t), m_emissive(e) {}
+struct BSDFSample {
+    glm::vec3 dir;
+    glm::vec3 bsdf;
+    float pdf;
+    uint32_t type;
+};
 
-MaterialType Material::getType(){return m_type;}
-///Vector3f Material::getColor(){return m_color;}
-Vector3f Material::getEmission() {return m_emissive;}
-bool Material::hasEmission() {
-    if (m_emissive.norm() > Epsilon) return true;
-    else return false;
+FUNC_QUALIFIER inline float fresnelSchlick(float cosTheta, float ior) {
+    float f0 = (1.f - ior) / (1.f + ior);
+    return glm::mix(f0, 1.f, Math::pow5(1.f - cosTheta));
 }
 
-Vector3f Material::getColorAt(double u, double v) {
-    return Vector3f();
+FUNC_QUALIFIER inline glm::vec3 fresnelSchlick(float cosTheta, glm::vec3 f0) {
+    return glm::mix(f0, glm::vec3(1.f), Math::pow5(1.f - cosTheta));
 }
 
-
-Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
-    switch(m_type){
-        case Lambert:
-        {
-            // uniform sample on the hemisphere
-            float x_1 = get_random_float(), x_2 = get_random_float();
-            float z = std::fabs(1.0f - 2.0f * x_1);
-            float r = std::sqrt(1.0f - z * z), phi = 2 * Pi * x_2;
-            Vector3f localRay(r*std::cos(phi), r*std::sin(phi), z);
-            return toWorld(localRay, N);
-            
-            break;
-        }
-        case Metal:
-        case Dielectric:
-        {
-            return Vector3f(0.0f);
-            break;
-        }
+FUNC_QUALIFIER static float fresnel(float cosIn, float ior) {
+#if MATERIAL_DIELECTRIC_USE_SCHLICK_APPROX
+    return fresnelSchlick(cosIn, ior);
+#else
+    if (cosIn < 0) {
+        ior = 1.f / ior;
+        cosIn = -cosIn;
     }
-}
-
-float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
-    switch(m_type){
-        case Lambert:
-        {
-            // uniform sample probability 1 / (2 * PI)
-            if (dotProduct(wo, N) > 0.0f)
-                return 0.5f * PiInv;
-            else
-                return 0.0f;
-            break;
-        }
-        case Metal:
-        case Dielectric:
-        {
-            return 0.0f;
-            break;
-        }
+    float sinIn = glm::sqrt(1.f - cosIn * cosIn);
+    float sinTr = sinIn / ior;
+    if (sinTr >= 1.f) {
+        return 1.f;
     }
+    float cosTr = glm::sqrt(1.f - sinTr * sinTr);
+    return (Math::square((cosIn - ior * cosTr) / (cosIn + ior * cosTr)) +
+            Math::square((ior * cosIn - cosTr) / (ior * cosIn + cosTr))) *
+           .5f;
+#endif
 }
 
-Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
-    switch(m_type){
-        case Lambert:
-        {
-            // calculate the contribution of diffuse   model
-            float cosalpha = dotProduct(N, wo);
-            if (cosalpha > 0.0f) {
-                Vector3f diffuse = m_albedo * PiInv;
-                return diffuse;
+FUNC_QUALIFIER static float schlickG(float cosTheta, float alpha) {
+    float a = alpha * .5f;
+    return cosTheta / (cosTheta * (1.f - a) + a);
+}
+
+FUNC_QUALIFIER inline float smithG(float cosWo, float cosWi, float alpha) {
+    return schlickG(glm::abs(cosWo), alpha) * schlickG(glm::abs(cosWi), alpha);
+}
+
+FUNC_QUALIFIER static float GTR2Distrib(float cosTheta, float alpha) {
+    if (cosTheta < 1e-6f) {
+        return 0.f;
+    }
+    float aa = alpha * alpha;
+    float nom = aa;
+    float denom = cosTheta * cosTheta * (aa - 1.f) + 1.f;
+    denom = denom * denom * Pi;
+    return nom / denom;
+}
+
+FUNC_QUALIFIER static float GTR2Pdf(glm::vec3 n, glm::vec3 m, glm::vec3 wo, float alpha) {
+    return GTR2Distrib(glm::dot(n, m), alpha) * schlickG(glm::dot(n, wo), alpha) *
+           Math::absDot(m, wo) / Math::absDot(n, wo);
+}
+
+/**
+ * Sampling (Trowbridge-Reitz/GTR2/GGX) microfacet distribution, but only visible normals.
+ * This reduces invalid samples and make pdf values at grazing angles more stable
+ * See [Sampling the GGX Distribution of Visible Normals, Eric Heitz, JCGT 2018]:
+ * https://jcgt.org/published/0007/04/01/
+ * Note:
+ */
+FUNC_QUALIFIER static glm::vec3 GTR2Sample(glm::vec3 n, glm::vec3 wo, float alpha, glm::vec2 r) {
+    glm::mat3 transMat = Math::localRefMatrix(n);
+    glm::mat3 transInv = glm::inverse(transMat);
+
+    glm::vec3 vh = glm::normalize((transInv * wo) * glm::vec3(alpha, alpha, 1.f));
+
+    float lenSq = vh.x * vh.x + vh.y * vh.y;
+    glm::vec3 t = lenSq > 0.f ? glm::vec3(-vh.y, vh.x, 0.f) / sqrt(lenSq) : glm::vec3(1.f, 0.f, 0.f);
+    glm::vec3 b = glm::cross(vh, t);
+
+    glm::vec2 p = Math::toConcentricDisk(r.x, r.y);
+    float s = 0.5f * (vh.z + 1.f);
+    p.y = (1.f - s) * glm::sqrt(1.f - p.x * p.x) + s * p.y;
+
+    glm::vec3 h = t * p.x + b * p.y + vh * glm::sqrt(glm::max(0.f, 1.f - glm::dot(p, p)));
+    h = glm::vec3(h.x * alpha, h.y * alpha, glm::max(0.f, h.z));
+    return glm::normalize(transMat * h);
+}
+
+struct Material {
+    enum Type {
+        Lambertian,
+        MetallicWorkflow,
+        Dielectric,
+        Disney,
+        Light
+    };
+
+    FUNC_QUALIFIER glm::vec3 lambertianBSDF(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        return baseColor * PiInv;
+    }
+
+    FUNC_QUALIFIER float lambertianPdf(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        // ! seems to be wrong to calculate pdf
+        // return Math::satDot(n, wi) * PiInv;
+        return 0.5f * PiInv;
+    }
+
+    FUNC_QUALIFIER void lambertianSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
+        sample.dir = Math::sampleHemisphereCosine(n, r.x, r.y); // wi
+        sample.bsdf = baseColor * PiInv; // f_r
+        // ! seems to be wrong to calculate pdf
+        // sample.pdf = Math::satDot(n, sample.dir) * PiInv;
+        sample.pdf = 0.5f * PiInv;
+        sample.type = Diffuse | Reflection;
+    }
+
+    FUNC_QUALIFIER glm::vec3 dielectricBSDF(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        return glm::vec3(0.f);
+    }
+
+    FUNC_QUALIFIER float dielectricPdf(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        return 0.f;
+    }
+
+    FUNC_QUALIFIER void dielectricSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
+        float pdfRefl = fresnel(glm::dot(n, wo), ior);
+
+        sample.bsdf = baseColor;
+
+        if (r.z < pdfRefl) {
+            sample.dir = glm::reflect(-wo, n);
+            sample.type = Specular | Reflection;
+            sample.pdf = 1.f;
+        } else {
+            bool result = Math::refract(n, wo, ior, sample.dir);
+            if (!result) {
+                sample.type = Invalid;
+                return;
             }
-            else
-                return Vector3f(0.0f);
-            break;
-        }
-        case Metal:
-        case Dielectric:
-        {
-            return Vector3f(0.0f);
-            break;
+            if (glm::dot(n, wo) < 0) {
+                ior = 1.f / ior;
+            }
+            sample.bsdf /= ior * ior;
+            sample.type = Specular | Transmission;
+            sample.pdf = 1.f;
         }
     }
-}
 
-#endif //RAYTRACING_MATERIAL_H
+    FUNC_QUALIFIER glm::vec3 metallicWorkflowBSDF(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        float alpha = roughness * roughness;
+        glm::vec3 h = glm::normalize(wo + wi);
+
+        float cosO = glm::dot(n, wo);
+        float cosI = glm::dot(n, wi);
+        if (cosI * cosO < 1e-7f) {
+            return glm::vec3(0.f);
+        }
+
+        glm::vec3 f = fresnelSchlick(glm::dot(h, wo), glm::mix(glm::vec3(.08f), baseColor, metallic));
+        float g = smithG(cosO, cosI, alpha);
+        float d = GTR2Distrib(glm::dot(n, h), alpha);
+
+        return glm::mix(baseColor * PiInv * (1.f - metallic), glm::vec3(g * d / (4.f * cosI * cosO)), f);
+    }
+
+    FUNC_QUALIFIER float metallicWorkflowPdf(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        glm::vec3 h = glm::normalize(wo + wi);
+        return glm::mix(
+            Math::satDot(n, wi) * PiInv,
+            GTR2Pdf(n, h, wo, roughness * roughness) / (4.f * Math::absDot(h, wo)),
+            1.f / (2.f - metallic));
+    }
+
+    FUNC_QUALIFIER void metallicWorkflowSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
+        float alpha = roughness * roughness;
+
+        if (r.z > (1.f / (2.f - metallic))) {
+            sample.dir = Math::sampleHemisphereCosine(n, r.x, r.y);
+        } else {
+            glm::vec3 h = GTR2Sample(n, wo, alpha, glm::vec2(r));
+            sample.dir = -glm::reflect(wo, h);
+        }
+
+        if (glm::dot(n, sample.dir) < 0.f) {
+            sample.type = Invalid;
+        } else {
+            sample.bsdf = metallicWorkflowBSDF(n, wo, sample.dir);
+            sample.pdf = metallicWorkflowPdf(n, wo, sample.dir);
+            sample.type = Glossy | Reflection;
+        }
+    }
+    // f_r
+    FUNC_QUALIFIER glm::vec3 BSDF(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        switch (type) {
+        case Material::Type::Lambertian:
+            return lambertianBSDF(n, wo, wi);
+        case Material::Type::MetallicWorkflow:
+            return metallicWorkflowBSDF(n, wo, wi);
+        case Material::Type::Dielectric:
+            return dielectricBSDF(n, wo, wi);
+        }
+        return glm::vec3(0.f);
+    }
+
+    FUNC_QUALIFIER float pdf(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        switch (type) {
+        case Material::Type::Lambertian:
+            return lambertianPdf(n, wo, wi);
+        case Material::Type::MetallicWorkflow:
+            return metallicWorkflowPdf(n, wo, wi);
+        case Material::Dielectric:
+            return dielectricPdf(n, wo, wi);
+        }
+        return 0.f;
+    }
+
+    FUNC_QUALIFIER void sample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
+        switch (type) {
+        case Material::Type::Lambertian:
+            lambertianSample(n, wo, r, sample);
+            break;
+        case Material::Type::MetallicWorkflow:
+            metallicWorkflowSample(n, wo, r, sample);
+            break;
+        case Material::Type::Dielectric:
+            dielectricSample(n, wo, r, sample);
+            break;
+        default:
+            sample.type = Invalid;
+        }
+    }
+
+    int type = Type::Lambertian;
+    glm::vec3 baseColor = glm::vec3(.9f);
+    float metallic = 0.f;
+    float roughness = 1.f;
+    float ior = 1.5f;
+
+    int baseColorMapId = NullTextureId;
+    int metallicMapId = NullTextureId;
+    int roughnessMapId = NullTextureId;
+    int normalMapId = NullTextureId;
+
+    CUDA_PORTABLE(Material);
+};

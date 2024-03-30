@@ -1,8 +1,7 @@
 #include <common/Renderer.hpp>
 #include <common/Scene.hpp>
-#include <common/Sphere.hpp>
+// #include <common/Sphere.hpp>
 #include <common/Triangle.hpp>
-#include <common/Vector.hpp>
 #include <common/Utility.hpp>
 #include <chrono>
 
@@ -12,7 +11,7 @@
 // function().
 int main(int argc, char** argv) {
     int spp = 32;
-    int maxDepth = 10;
+    int maxDepth = 32;
     // read SPP & maxDepth from command line
     if (argc > 1)
         spp = atoi(argv[1]);
