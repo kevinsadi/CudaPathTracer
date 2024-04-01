@@ -5,7 +5,6 @@ set(COMMON_SOURCES
     ${PROJECT_SOURCE_DIR}/common/Vector.cpp
     ${PROJECT_SOURCE_DIR}/common/Vector.hpp
     ${PROJECT_SOURCE_DIR}/common/Sphere.hpp
-    ${PROJECT_SOURCE_DIR}/common/global.hpp
     ${PROJECT_SOURCE_DIR}/common/Triangle.hpp
     ${PROJECT_SOURCE_DIR}/common/Triangle.cpp
     ${PROJECT_SOURCE_DIR}/common/Scene.cpp
@@ -22,5 +21,7 @@ set(COMMON_SOURCES
     ${PROJECT_SOURCE_DIR}/common/Renderer.hpp
     ${PROJECT_SOURCE_DIR}/common/Utility.cpp
     ${PROJECT_SOURCE_DIR}/common/Utility.hpp
+    ${PROJECT_SOURCE_DIR}/common/MathUtils.hpp
+    ${PROJECT_SOURCE_DIR}/common/MathUtils.cpp
     CACHE INTERNAL ""
 )

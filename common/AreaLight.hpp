@@ -4,9 +4,9 @@
 
 #pragma once
 
+#include "MathUtils.hpp"
 #include "Vector.hpp"
 #include "Light.hpp"
-#include "global.hpp"
 
 class AreaLight : public Light
 {

@@ -193,7 +193,7 @@ inline Intersection Triangle::getIntersection(Ray ray)
     double u, v, t_tmp = 0;
     Vector3f pvec = crossProduct(ray.direction, e2);
     double det = dotProduct(e1, pvec);
-    if (fabs(det) < EPSILON)
+    if (fabs(det) < Epsilon)
         return inter;
 
     double det_inv = 1. / det;

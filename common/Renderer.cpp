@@ -4,11 +4,11 @@
 
 #include "Scene.hpp"
 #include "Renderer.hpp"
+#include "MathUtils.hpp"
+#include "Utility.hpp"
 #include <omp.h>
 
-inline float deg2rad(const float& deg) { return deg * M_PI / 180.0; }
-
-const float EPSILON = 0.00001;
+inline float deg2rad(const float& deg) { return deg * Pi / 180.0; }
 
 // The main render function. This where we iterate over all pixels in the image,
 // generate primary rays and cast these rays into the scene. The content of the
@@ -24,6 +24,7 @@ void Renderer::Render(const Scene& scene)
 
     // change the spp value to change sample ammount
     std::cout << "SPP: " << this->spp << "\n";
+    std::cout << "Max Depth: " << scene.maxDepth << "\n";
     for (uint32_t j = 0; j < scene.height; ++j) {
         for (uint32_t i = 0; i < scene.width; ++i) {
             // generate primary ray direction
@@ -38,7 +39,7 @@ void Renderer::Render(const Scene& scene)
             }
             m++;
         }
-        UpdateProgress(j / (float)scene.height);
+        Utility::UpdateProgress(j / (float)scene.height);
     }
-    UpdateProgress(1.f);
+    Utility::UpdateProgress(1.f);
 }

@@ -3,7 +3,6 @@
 #include <common/Sphere.hpp>
 #include <common/Triangle.hpp>
 #include <common/Vector.hpp>
-#include <common/global.hpp>
 #include <common/Utility.hpp>
 #include <chrono>
 

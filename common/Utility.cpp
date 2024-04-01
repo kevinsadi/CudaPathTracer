@@ -1,5 +1,5 @@
 #include "Utility.hpp"
-#include <common/global.hpp>
+#include "MathUtils.hpp"
 
 void Utility::SavePPM(const std::string& path, const std::vector<Vector3f>& frameBuffer, int width, int height)
 {
@@ -20,3 +20,18 @@ void Utility::SavePPM(const std::string& path, const std::vector<Vector3f>& fram
     }
     fclose(fp);
 }
+
+void Utility::UpdateProgress(float progress)
+{
+    int barWidth = 70;
+
+    std::cout << "[";
+    int pos = barWidth * progress;
+    for (int i = 0; i < barWidth; ++i) {
+        if (i < pos) std::cout << "=";
+        else if (i == pos) std::cout << ">";
+        else std::cout << " ";
+    }
+    std::cout << "] " << int(progress * 100.0) << " %\r";
+    std::cout.flush();
+};

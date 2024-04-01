@@ -1,6 +1,9 @@
 set(PROJECT_NAME cpu_path_tracer)
 set(SRCROOT ${PROJECT_SOURCE_DIR}/${PROJECT_NAME})
 
+# add external libraries
+include_directories(${PROJECT_SOURCE_DIR}/external)
+
 if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
     # Set the compiler to clang++ from LLVM
     set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")

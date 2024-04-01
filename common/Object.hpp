@@ -6,7 +6,6 @@
 #define RAYTRACING_OBJECT_H
 
 #include "Vector.hpp"
-#include "global.hpp"
 #include "Bounds3.hpp"
 #include "Ray.hpp"
 #include "Intersection.hpp"

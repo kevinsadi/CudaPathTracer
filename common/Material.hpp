@@ -6,6 +6,7 @@
 #define RAYTRACING_MATERIAL_H
 
 #include "Vector.hpp"
+#include "MathUtils.hpp"
 
 enum MaterialType { Lambert, Metal, Dielectric };
 
@@ -113,7 +114,7 @@ MaterialType Material::getType(){return m_type;}
 ///Vector3f Material::getColor(){return m_color;}
 Vector3f Material::getEmission() {return m_emissive;}
 bool Material::hasEmission() {
-    if (m_emissive.norm() > EPSILON) return true;
+    if (m_emissive.norm() > Epsilon) return true;
     else return false;
 }
 
@@ -129,7 +130,7 @@ Vector3f Material::sample(const Vector3f &wi, const Vector3f &N){
             // uniform sample on the hemisphere
             float x_1 = get_random_float(), x_2 = get_random_float();
             float z = std::fabs(1.0f - 2.0f * x_1);
-            float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+            float r = std::sqrt(1.0f - z * z), phi = 2 * Pi * x_2;
             Vector3f localRay(r*std::cos(phi), r*std::sin(phi), z);
             return toWorld(localRay, N);
             
@@ -150,7 +151,7 @@ float Material::pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N){
         {
             // uniform sample probability 1 / (2 * PI)
             if (dotProduct(wo, N) > 0.0f)
-                return 0.5f * M_1_PI;
+                return 0.5f * PiInv;
             else
                 return 0.0f;
             break;
@@ -171,7 +172,7 @@ Vector3f Material::eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &
             // calculate the contribution of diffuse   model
             float cosalpha = dotProduct(N, wo);
             if (cosalpha > 0.0f) {
-                Vector3f diffuse = m_albedo * M_1_PI;
+                Vector3f diffuse = m_albedo * PiInv;
                 return diffuse;
             }
             else
