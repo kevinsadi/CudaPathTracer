@@ -7,27 +7,28 @@
 
 ## Getting Started
 
-```bash
-mkdir build
-cd build
-cmake ..
-```
 ### Linux or Mac
+
 ```bash
-make
-```
-### Windows
-```bash
-cmake --build .
+./scripts/setup.sh
+
+./scripts/run.sh cpu_path_tracer 
+# or
+./scripts/run.sh cpu_path_tracer <SPP>
+# or
+./scripts/run.sh cpu_path_tracer <SPP> <MaxDepth>
 ```
 
-Now, back to the root directory.
+### Windows
+
 ```bash
-./build/cpu_path_tracer/Debug/cpu_path_tracer # default SPP = 32, MaxDepth = 50
+./scripts/setup.bat
+
+./scripts/run.bat cpu_path_tracer 
 # or
-./build/cpu_path_tracer/Debug/cpu_path_tracer <SPP>
+./scripts/run.bat cpu_path_tracer <SPP>
 # or
-./build/cpu_path_tracer/Debug/cpu_path_tracer <SPP> <MaxDepth>
+./scripts/run.bat cpu_path_tracer <SPP> <MaxDepth>
 ```
 
 Now, view the output image in the `out` directory at root.
