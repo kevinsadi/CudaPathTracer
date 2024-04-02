@@ -17,7 +17,7 @@
 
 struct BVHBuildNode;
 // BVHAccel Forward Declarations
-struct BVHPrimitiveInfo;
+// struct BVHPrimitiveInfo;
 
 // BVHAccel Declarations
 inline int leafNodes, totalLeafNodes, totalPrimitives, interiorNodes;
@@ -29,12 +29,12 @@ public:
 
     // BVHAccel Public Methods
     BVHAccel(std::vector<Object*> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod::NAIVE);
-    Bounds3 WorldBound() const;
+    __host__ __device__ Bounds3 WorldBound() const;
     ~BVHAccel();
 
-    Intersection Intersect(const Ray &ray) const;
-    Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
-    bool IntersectP(const Ray &ray) const;
+    __host__ __device__ Intersection Intersect(const Ray &ray) const;
+    __host__ __device__ Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
+    __host__ __device__ bool IntersectP(const Ray &ray) const;
     BVHBuildNode* root;
 
     // BVHAccel Private Methods
@@ -43,10 +43,14 @@ public:
     // BVHAccel Private Data
     const int maxPrimsInNode;
     const SplitMethod splitMethod;
-    std::vector<Object*> primitives;
+    // std::vector<Object*> primitives;
+    // Object** primitives = nullptr;
+    // int num_primitives = 0;
 
-    void getSample(BVHBuildNode* node, float p, Intersection &pos, float &pdf);
-    void Sample(Intersection &pos, float &pdf);
+    __host__ __device__ void getSample(BVHBuildNode* node, float p, Intersection &pos, float &pdf);
+    __host__ __device__ void Sample(Intersection &pos, float &pdf);
+
+    CUDA_PORTABLE(BVHAccel);
 };
 
 struct BVHBuildNode {
@@ -64,6 +68,8 @@ public:
         left = nullptr;right = nullptr;
         object = nullptr;
     }
+
+    CUDA_PORTABLE(BVHBuildNode);
 };
 
 

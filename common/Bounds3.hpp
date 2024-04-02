@@ -27,8 +27,8 @@ class Bounds3
         pMax = Vector3f(fmax(p1.x, p2.x), fmax(p1.y, p2.y), fmax(p1.z, p2.z));
     }
 
-    Vector3f Diagonal() const { return pMax - pMin; }
-    int maxExtent() const
+    __host__ __device__ Vector3f Diagonal() const { return pMax - pMin; }
+    __host__ __device__ int maxExtent() const
     {
         Vector3f d = Diagonal();
         if (d.x > d.y && d.x > d.z)
@@ -39,14 +39,14 @@ class Bounds3
             return 2;
     }
 
-    double SurfaceArea() const
+    __host__ __device__ double SurfaceArea() const
     {
         Vector3f d = Diagonal();
         return 2 * (d.x * d.y + d.x * d.z + d.y * d.z);
     }
 
-    Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
-    Bounds3 Intersect(const Bounds3& b)
+    __host__ __device__ Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
+    __host__ __device__ Bounds3 Intersect(const Bounds3& b)
     {
         return Bounds3(Vector3f(fmax(pMin.x, b.pMin.x), fmax(pMin.y, b.pMin.y),
                                 fmax(pMin.z, b.pMin.z)),
@@ -54,7 +54,7 @@ class Bounds3
                                 fmin(pMax.z, b.pMax.z)));
     }
 
-    Vector3f Offset(const Vector3f& p) const
+    __host__ __device__ Vector3f Offset(const Vector3f& p) const
     {
         Vector3f o = p - pMin;
         if (pMax.x > pMin.x)
@@ -66,7 +66,7 @@ class Bounds3
         return o;
     }
 
-    bool Overlaps(const Bounds3& b1, const Bounds3& b2)
+    __host__ __device__ bool Overlaps(const Bounds3& b1, const Bounds3& b2)
     {
         bool x = (b1.pMax.x >= b2.pMin.x) && (b1.pMin.x <= b2.pMax.x);
         bool y = (b1.pMax.y >= b2.pMin.y) && (b1.pMin.y <= b2.pMax.y);
@@ -74,23 +74,23 @@ class Bounds3
         return (x && y && z);
     }
 
-    bool Inside(const Vector3f& p, const Bounds3& b)
+    __host__ __device__ bool Inside(const Vector3f& p, const Bounds3& b)
     {
         return (p.x >= b.pMin.x && p.x <= b.pMax.x && p.y >= b.pMin.y &&
                 p.y <= b.pMax.y && p.z >= b.pMin.z && p.z <= b.pMax.z);
     }
-    inline const Vector3f& operator[](int i) const
+    __host__ __device__ inline const Vector3f& operator[](int i) const
     {
         return (i == 0) ? pMin : pMax;
     }
 
-    inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
+    __host__ __device__ inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
                            const std::array<int, 3>& dirisNeg) const;
 };
 
 
 
-inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
+__host__ __device__ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
                                 const std::array<int, 3>& dirIsNeg) const
 {
     // dirIsNeg[0] = invDir.x < 0;
@@ -117,7 +117,7 @@ inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
     return true;
 }
 
-inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
+__host__ __device__ inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
 {
     Bounds3 ret;
     ret.pMin = Vector3f::Min(b1.pMin, b2.pMin);
@@ -125,7 +125,7 @@ inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
     return ret;
 }
 
-inline Bounds3 Union(const Bounds3& b, const Vector3f& p)
+__host__ __device__ inline Bounds3 Union(const Bounds3& b, const Vector3f& p)
 {
     Bounds3 ret;
     ret.pMin = Vector3f::Min(b.pMin, p);

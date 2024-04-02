@@ -1,22 +1,14 @@
 set(PROJECT_NAME gpu_path_tracer)
 set(SRCROOT ${PROJECT_SOURCE_DIR}/${PROJECT_NAME})
-
-# add external libraries
-include_directories(${PROJECT_SOURCE_DIR}/external)
-
-if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    # Set the compiler to clang++ from LLVM
-    set(CMAKE_CXX_COMPILER "/usr/local/opt/llvm/bin/clang++")
-
-    # Add the compile flag -fopenmp
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O3")
-else()
-    find_package(OpenMP REQUIRED)
-    # on windows we use cl.exe
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /openmp /O2")
-endif()
+enable_language(CUDA)
 
 set(SRC
+    ${SRCROOT}/CudaPortable.cu
+    # ${SRCROOT}/CudaPathTrace.h
+    # ${SRCROOT}/CudaPathTrace.cu
+    ${SRCROOT}/CudaRenderer.hpp
+    # ${SRCROOT}/CudaRenderer.cpp
+    ${SRCROOT}/CudaRenderer.cu
     ${SRCROOT}/main.cpp
     # add more here
 )
@@ -25,6 +17,10 @@ add_project(${PROJECT_NAME}
             SOURCES ${SRC}
 )
 
-if (NOT ${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
-    target_link_libraries(${PROJECT_NAME} PRIVATE OpenMP::OpenMP_CXX)
-endif()
+add_compile_definitions(
+    GPU_PATH_TRACER
+)
+
+# setup cuda version
+set(CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -arch=sm_70")
+set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES "70")

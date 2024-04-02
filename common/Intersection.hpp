@@ -6,12 +6,13 @@
 #define RAYTRACING_INTERSECTION_H
 #include "Vector.hpp"
 #include "Material.hpp"
+#include "CudaPortable.hpp"
 class Object;
 class Sphere;
 
 struct Intersection
 {
-    Intersection(){
+    __host__ __device__ Intersection(){
         happened=false;
         coords=Vector3f();
         normal=Vector3f();

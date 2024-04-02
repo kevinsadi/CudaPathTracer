@@ -1,8 +1,5 @@
-#include <common/Renderer.hpp>
+#include "CudaRenderer.hpp"
 #include <common/Scene.hpp>
-#include <common/Sphere.hpp>
-#include <common/Triangle.hpp>
-#include <common/Vector.hpp>
 #include <common/Utility.hpp>
 #include <chrono>
 
@@ -28,7 +25,7 @@ int main(int argc, char** argv) {
     std::cout << "OpenMP: Disabled\n";
 #endif
 
-    Renderer r;
+    CudaRenderer r;
     r.spp = spp;
 
     auto start = std::chrono::system_clock::now();

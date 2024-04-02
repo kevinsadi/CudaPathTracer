@@ -4,15 +4,20 @@
 
 BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
                    SplitMethod splitMethod)
-    : maxPrimsInNode(std::min(255, maxPrimsInNode)), splitMethod(splitMethod),
-      primitives(std::move(p))
+    : maxPrimsInNode(std::min(255, maxPrimsInNode)), splitMethod(splitMethod)
+    //   ,primitives(std::move(p))
 {
+    // num_primitives = p.size();
+    // if (num_primitives == 0)
+    //     return;
+    if (p.size() == 0)
+        return;
     time_t start, stop;
     time(&start);
-    if (primitives.empty())
-        return;
 
-    root = recursiveBuild(primitives);
+    root = recursiveBuild(p);
+    // primitives = new Object*[num_primitives];
+    // memcpy(primitives, p.data(), num_primitives * sizeof(Object*));
 
     time(&stop);
     double diff = difftime(stop, start);
@@ -137,4 +142,12 @@ void BVHAccel::Sample(Intersection &pos, float &pdf){
     float p = std::sqrt(get_random_float()) * root->area;
     getSample(root, p, pos, pdf);
     pdf /= root->area;
+}
+
+BVHAccel::~BVHAccel(){
+    // if (primitives)
+    // {
+    //     delete[] primitives;
+    // }
+    delete root;
 }

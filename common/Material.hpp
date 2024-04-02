@@ -14,7 +14,7 @@ class Material{
 private:
 
     // Compute reflection direction
-    Vector3f reflect(const Vector3f &I, const Vector3f &N) const
+    __host__ __device__ Vector3f reflect(const Vector3f &I, const Vector3f &N) const
     {
         return I - 2 * dotProduct(I, N) * N;
     }
@@ -30,7 +30,7 @@ private:
     // If the ray is outside, you need to make cosi positive cosi = -N.I
     //
     // If the ray is inside, you need to invert the refractive indices and negate the normal N
-    Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior) const
+    __host__ __device__ Vector3f refract(const Vector3f &I, const Vector3f &N, const float &ior) const
     {
         float cosi = clamp(-1, 1, dotProduct(I, N));
         float etai = 1, etat = ior;
@@ -50,7 +50,7 @@ private:
     // \param ior is the material refractive index
     //
     // \param[out] kr is the amount of light reflected
-    void fresnel(const Vector3f &I, const Vector3f &N, const float &ior, float &kr) const
+    __host__ __device__ void fresnel(const Vector3f &I, const Vector3f &N, const float &ior, float &kr) const
     {
         float cosi = clamp(-1, 1, dotProduct(I, N));
         float etai = 1, etat = ior;
@@ -72,7 +72,7 @@ private:
         // kt = 1 - kr;
     }
 
-    Vector3f toWorld(const Vector3f &a, const Vector3f &N){
+    __host__ __device__ Vector3f toWorld(const Vector3f &a, const Vector3f &N){
         Vector3f B, C;
         if (std::fabs(N.x) > std::fabs(N.y)){
             float invLen = 1.0f / std::sqrt(N.x * N.x + N.z * N.z);
@@ -93,19 +93,20 @@ public:
     float m_ior, roughness;
 
     inline Material(MaterialType t=Lambert, Vector3f e=Vector3f(0,0,0));
-    inline MaterialType getType();
+    __host__ __device__ inline MaterialType getType();
     //inline Vector3f getColor();
-    inline Vector3f getColorAt(double u, double v);
-    inline Vector3f getEmission();
-    inline bool hasEmission();
+    __host__ __device__ inline Vector3f getColorAt(double u, double v);
+    __host__ __device__ inline Vector3f getEmission();
+    __host__ __device__ inline bool hasEmission();
 
     // sample a ray by Material properties
-    inline Vector3f sample(const Vector3f &wi, const Vector3f &N);
+    __host__ __device__ inline Vector3f sample(const Vector3f &wi, const Vector3f &N);
     // given a ray, calculate the PdF of this ray
-    inline float pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
+    __host__ __device__ inline float pdf(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
     // given a ray, calculate the contribution of this ray
-    inline Vector3f eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
+    __host__ __device__ inline Vector3f eval(const Vector3f &wi, const Vector3f &wo, const Vector3f &N);
 
+    CUDA_PORTABLE(Material);
 };
 
 Material::Material(MaterialType t, Vector3f e): m_type(t), m_emissive(e) {}

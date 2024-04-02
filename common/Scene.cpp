@@ -6,7 +6,12 @@
 
 void Scene::buildBVH() {
     printf(" - Generating BVH...\n\n");
+    std::vector<Object *> objects;
+    for (auto &mesh : meshes) {
+        objects.push_back(mesh);
+    }
     this->bvh = new BVHAccel(objects, 1, BVHAccel::SplitMethod::NAIVE);
+    // this->bvh = new BVHAccel(meshes, 1, BVHAccel::SplitMethod::NAIVE);
 }
 
 Intersection Scene::intersect(const Ray &ray) const {
@@ -15,18 +20,24 @@ Intersection Scene::intersect(const Ray &ray) const {
 
 void Scene::sampleLight(Intersection &pos, float &pdf) const {
     float emit_area_sum = 0;
-    for (uint32_t k = 0; k < objects.size(); ++k) {
-        if (objects[k]->hasEmit()) {
-            emit_area_sum += objects[k]->getArea();
+    // for (uint32_t k = 0; k < objects.size(); ++k) {
+    //     auto object = objects[k];
+    for (uint32_t k = 0; k < num_meshes; ++k) {
+        auto object = meshes_data[k];
+        if (object->hasEmit()) {
+            emit_area_sum += object->getArea();
         }
     }
     float p = get_random_float() * emit_area_sum;
     emit_area_sum = 0;
-    for (uint32_t k = 0; k < objects.size(); ++k) {
-        if (objects[k]->hasEmit()) {
-            emit_area_sum += objects[k]->getArea();
+    // for (uint32_t k = 0; k < objects.size(); ++k) {
+    //     auto object = objects[k];
+    for (uint32_t k = 0; k < num_meshes; ++k) {
+        auto object = meshes_data[k];
+        if (object->hasEmit()) {
+            emit_area_sum += object->getArea();
             if (p <= emit_area_sum) {
-                objects[k]->Sample(pos, pdf);
+                object->Sample(pos, pdf);
                 break;
             }
         }

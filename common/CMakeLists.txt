@@ -1,5 +1,6 @@
 # clean cache at every build
 set(COMMON_SOURCES
+    ${PROJECT_SOURCE_DIR}/common/CudaPortable.hpp
     ${PROJECT_SOURCE_DIR}/common/OBJ_Loader.hpp
     ${PROJECT_SOURCE_DIR}/common/Object.hpp
     ${PROJECT_SOURCE_DIR}/common/Vector.cpp

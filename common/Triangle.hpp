@@ -4,12 +4,13 @@
 #include "Intersection.hpp"
 #include "Material.hpp"
 #include "Object.hpp"
+#include "global.hpp"
 #include <cassert>
 #include <array>
 
-static bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
-                          const Vector3f& v2, const Vector3f& orig,
-                          const Vector3f& dir, float& tnear, float& u, float& v)
+__host__ __device__ static bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
+    const Vector3f& v2, const Vector3f& orig,
+    const Vector3f& dir, float& tnear, float& u, float& v)
 {
     Vector3f edge1 = v1 - v0;
     Vector3f edge2 = v2 - v0;
@@ -44,55 +45,60 @@ public:
     Vector3f e1, e2;     // 2 edges v1-v0, v2-v0;
     Vector3f t0, t1, t2; // texture coords
     Vector3f normal;
-    float area;
-    Material* m;
+    float area = -1;
+    Material* material = nullptr;
 
-    Triangle(Vector3f _v0, Vector3f _v1, Vector3f _v2, Material* _m = nullptr)
-        : v0(_v0), v1(_v1), v2(_v2), m(_m)
+    Triangle() = default;
+
+    __host__ __device__ Triangle(Vector3f _v0, Vector3f _v1, Vector3f _v2, Material* _m = nullptr)
+        : v0(_v0), v1(_v1), v2(_v2), material(_m)
     {
         e1 = v1 - v0;
         e2 = v2 - v0;
         normal = normalize(crossProduct(e1, e2));
-        area = crossProduct(e1, e2).norm()*0.5f;
+        area = crossProduct(e1, e2).norm() * 0.5f;
     }
 
-    bool intersect(const Ray& ray) override;
-    bool intersect(const Ray& ray, float& tnear,
-                   uint32_t& index) const override;
-    Intersection getIntersection(Ray ray) override;
-    void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
-                              const uint32_t& index, const Vector2f& uv,
-                              Vector3f& N, Vector2f& st) const override
+    __host__ __device__ bool intersect(const Ray& ray) override;
+    __host__ __device__ bool intersect(const Ray& ray, float& tnear,
+        uint32_t& index) const override;
+    __host__ __device__ Intersection getIntersection(Ray ray) override;
+    __host__ __device__ void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
+        const uint32_t& index, const Vector2f& uv,
+        Vector3f& N, Vector2f& st) const override
     {
         N = normal;
         //        throw std::runtime_error("triangle::getSurfaceProperties not
         //        implemented.");
     }
-    Vector3f evalDiffuseColor(const Vector2f&) const override;
-    Bounds3 getBounds() override;
-    // Sample a point on the surface of the object, used for area light
-    void Sample(Intersection &pos, float &pdf) override {
-        float x = std::sqrt(get_random_float()), y = get_random_float();
-        pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
-        pos.normal = this->normal;
-        pdf = 1.0f / area;
-    }
-    float getArea() override {
+    __host__ __device__ Vector3f evalDiffuseColor(const Vector2f&) const override;
+    __host__ __device__ Bounds3 getBounds() override;
+    // // Sample a point on the surface of the object, used for area light
+    // __host__ __device__ void Sample(Intersection& pos, float& pdf) override {
+    //     float x = std::sqrt(get_random_float()), y = get_random_float();
+    //     pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
+    //     pos.normal = this->normal;
+    //     pdf = 1.0f / area;
+    // }
+    __host__ __device__ float getArea() override {
         return area;
     }
-    bool hasEmit() override {
-        return m->hasEmission();
+    __host__ __device__ bool hasEmit() override {
+        return material->hasEmission();
     }
+
+    CUDA_PORTABLE(Triangle);
 };
 
 class MeshTriangle : public Object
 {
 public:
-    MeshTriangle(const std::string& filename, Material *mt = new Material());
+    MeshTriangle(const std::string& filename, Material* mt = new Material());
+    ~MeshTriangle();
 
-    bool intersect(const Ray& ray) override { return true; }
+    __host__ __device__ bool intersect(const Ray& ray) override { return true; }
 
-    bool intersect(const Ray& ray, float& tnear, uint32_t& index) const override
+    __host__ __device__ bool intersect(const Ray& ray, float& tnear, uint32_t& index) const override
     {
         bool intersect = false;
         for (uint32_t k = 0; k < numTriangles; ++k) {
@@ -101,7 +107,7 @@ public:
             const Vector3f& v2 = vertices[vertexIndex[k * 3 + 2]];
             float t, u, v;
             if (rayTriangleIntersect(v0, v1, v2, ray.origin, ray.direction, t,
-                                     u, v) &&
+                u, v) &&
                 t < tnear) {
                 tnear = t;
                 index = k;
@@ -112,11 +118,11 @@ public:
         return intersect;
     }
 
-    Bounds3 getBounds() override { return bounding_box; }
+    __host__ __device__ Bounds3 getBounds() override { return bounding_box; }
 
-    void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
-                              const uint32_t& index, const Vector2f& uv,
-                              Vector3f& N, Vector2f& st) const override
+    __host__ __device__ void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
+        const uint32_t& index, const Vector2f& uv,
+        Vector3f& N, Vector2f& st) const override
     {
         const Vector3f& v0 = vertices[vertexIndex[index * 3]];
         const Vector3f& v1 = vertices[vertexIndex[index * 3 + 1]];
@@ -130,16 +136,16 @@ public:
         st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
     }
 
-    Vector3f evalDiffuseColor(const Vector2f& st) const override
+    __host__ __device__ Vector3f evalDiffuseColor(const Vector2f& st) const override
     {
         float scale = 5;
         float pattern =
             (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
         return lerp(Vector3f(0.815, 0.235, 0.031),
-                    Vector3f(0.937, 0.937, 0.231), pattern);
+            Vector3f(0.937, 0.937, 0.231), pattern);
     }
 
-    Intersection getIntersection(Ray ray) override
+    __host__ __device__ Intersection getIntersection(Ray ray) override
     {
         Intersection intersec;
 
@@ -150,41 +156,46 @@ public:
         return intersec;
     }
     // Sample a point on the surface of the object, used for area light
-    void Sample(Intersection &pos, float &pdf) override {
+    __host__ __device__ void Sample(Intersection& pos, float& pdf) override {
         bvh->Sample(pos, pdf);
-        pos.emit = m->getEmission();
+        pos.emit = material->getEmission();
     }
-    float getArea() override {
+    __host__ __device__ float getArea() override {
         return area;
     }
-    bool hasEmit() override {
-        return m->hasEmission();
+    __host__ __device__ bool hasEmit() override {
+        return material->hasEmission();
     }
 
     Bounds3 bounding_box;
-    std::unique_ptr<Vector3f[]> vertices;
+    // todo: we have both triangle soup and indexed mesh, should keep only one
+    int num_vertices = 0;
+    Vector3f* vertices = nullptr;
     uint32_t numTriangles;
-    std::unique_ptr<uint32_t[]> vertexIndex;
-    std::unique_ptr<Vector2f[]> stCoordinates;
-
-    std::vector<Triangle> triangles;
+    Vector2f* stCoordinates = nullptr; // uv1
+    // todo: vertex normal?
+    int num_triangles = 0;
+    uint32_t* vertexIndex = nullptr;
+    Triangle* triangles = nullptr; // triangle soup
 
     BVHAccel* bvh;
     float area;
 
-    Material* m;
+    Material* material;
+
+    CUDA_PORTABLE(MeshTriangle);
 };
 
-inline bool Triangle::intersect(const Ray& ray) { return true; }
-inline bool Triangle::intersect(const Ray& ray, float& tnear,
-                                uint32_t& index) const
+__host__ __device__ inline bool Triangle::intersect(const Ray& ray) { return true; }
+__host__ __device__ inline bool Triangle::intersect(const Ray& ray, float& tnear,
+    uint32_t& index) const
 {
     return false;
 }
 
-inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
+__host__ __device__ inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 
-inline Intersection Triangle::getIntersection(Ray ray)
+__host__ __device__ inline Intersection Triangle::getIntersection(Ray ray)
 {
     Intersection inter;
 
@@ -215,12 +226,12 @@ inline Intersection Triangle::getIntersection(Ray ray)
     inter.normal = normal;
     inter.distance = t_tmp;
     inter.obj = this;
-    inter.m = this->m;
+    inter.m = this->material;
 
     return inter;
 }
 
-inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
+__host__ __device__ inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
 {
     return Vector3f(0.5, 0.5, 0.5);
 }
