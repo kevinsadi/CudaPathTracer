@@ -60,7 +60,7 @@ public:
     // const std::vector<std::unique_ptr<Light>> &get_lights() const { return lights; }
     FUNC_QUALIFIER Intersection intersect(const Ray& ray) const;
     void buildBVH();
-    FUNC_QUALIFIER Vector3f castRay(const Ray& ray, int depth) const;
+    FUNC_QUALIFIER Vector3f castRay(const Ray& ray) const;
     FUNC_QUALIFIER void sampleLight(Intersection& pos, float& pdf) const;
     FUNC_QUALIFIER bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
     // std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,

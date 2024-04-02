@@ -3,22 +3,24 @@
 //
 #include "Scene.hpp"
 #include "Triangle.hpp"
+#include "Material.hpp"
+#include "MathUtils.hpp"
 
 void Scene::buildBVH() {
     printf(" - Generating BVH...\n\n");
-    std::vector<Object *> objects;
-    for (auto &mesh : meshes) {
+    std::vector<Object*> objects;
+    for (auto& mesh : meshes) {
         objects.push_back(mesh);
     }
     this->bvh = new BVHAccel(objects, 1, BVHAccel::SplitMethod::NAIVE);
     // this->bvh = new BVHAccel(meshes, 1, BVHAccel::SplitMethod::NAIVE);
 }
 
-Intersection Scene::intersect(const Ray &ray) const {
+Intersection Scene::intersect(const Ray& ray) const {
     return this->bvh->Intersect(ray);
 }
 
-void Scene::sampleLight(Intersection &pos, float &pdf) const {
+void Scene::sampleLight(Intersection& pos, float& pdf) const {
     float emit_area_sum = 0;
     // for (uint32_t k = 0; k < objects.size(); ++k) {
     //     auto object = objects[k];
@@ -45,12 +47,12 @@ void Scene::sampleLight(Intersection &pos, float &pdf) const {
 }
 
 bool Scene::trace(
-    const Ray &ray,
-    const std::vector<Object *> &objects,
-    float &tNear, uint32_t &index, Object **hitObject) {
+    const Ray& ray,
+    const std::vector<Object*>& objects,
+    float& tNear, uint32_t& index, Object** hitObject) {
     *hitObject = nullptr;
     for (uint32_t k = 0; k < objects.size(); ++k) {
-        float tNearK = kInfinity;
+        float tNearK = kFloatInfinity;
         uint32_t indexK;
         Vector2f uvK;
         if (objects[k]->intersect(ray, tNearK, indexK) && tNearK < tNear) {
@@ -66,70 +68,96 @@ bool Scene::trace(
 static const double epsilon = 0.0005;
 
 // Implementation of Path Tracing
-Vector3f Scene::castRay(const Ray &ray, int depth) const {
-    Vector3f radiance(0);
+Vector3f Scene::castRay(const Ray& eyeRay) const {
+    glm::vec3 accRadiance(0);
 
-    if (depth > this->maxDepth)
-        return radiance;
+    Ray ray = eyeRay;
+    Intersection intersec = Scene::intersect(ray);
 
-    Intersection hit = Scene::intersect(ray);
-    if (!hit.happened)
-        return radiance;
-    if (hit.m->hasEmission())
-        return hit.m->getEmission();
+    // if not hit anything, return background color
+    if (!intersec.happened)
+        return fromGlm(accRadiance);
+    // if hit light, return light emission
+    if (intersec.m->hasEmission())
+        return intersec.m->getEmission();
 
-    switch (hit.m->getType()) {
-    case Lambert: {
-        Vector3f L_dir(0.f), L_indir(0.f);
-        // direct lighting
-        Intersection light_sample;
-        float light_pdf;
-        sampleLight(light_sample, light_pdf);
-        Vector3f p = hit.coords;
-        Vector3f x = light_sample.coords;
-        // outgoing radiance direction at p, which is typically the opposite of ray direction
-        Vector3f wo = -ray.direction;
-        // incident radiance direction at p, poting outwards
-        Vector3f ws = (x - p).normalized();
-        // shadow ray (I abuse the term in ray tracing), testing if this light is blocked
-        Ray shadow_ray(p, ws);
-        Intersection hit2 = Scene::intersect(shadow_ray);
-        if (hit2.distance - (x - p).norm() > -epsilon) {
-            // hit the light, no blockades
-            Vector3f emit = light_sample.emit;
-            Vector3f f_r = hit.m->eval(ws, wo, hit.normal);
-            float cos_theta = std::max(0.0f, dotProduct(hit.normal, ws));
-            float cos_theta_prime = std::max(0.0f, dotProduct(light_sample.normal, -ws));
-            float r2 = dotProduct(x - p, x - p);
-            L_dir = emit * f_r * cos_theta * cos_theta_prime / r2 / light_pdf;
+    glm::vec3 throughput(1.0f);
+    glm::vec3 wo = -ray.direction.toGlm();
+    glm::vec3 normal = intersec.normal.toGlm();
+    Material* material = intersec.m;
+    auto mateiralType = material->getType();
+    for (int depth = 0; depth < this->maxDepth; ++depth)
+    {
+        bool deltaBSDF = (mateiralType == Dielectric);
+
+        if (mateiralType != Dielectric && glm::dot(normal, wo) < 0.f) {
+            normal = -normal;
+            intersec.normal = fromGlm(normal);
         }
-        // return L_dir; // for testing direct lighting only
 
-        // indirect lighting
-        if (get_random_float() < RussianRoulette) {
-            Vector3f wi = hit.m->sample(wo, hit.normal).normalized();
-            Ray ray_indir(p, wi);
-            Intersection hit_indir = Scene::intersect(ray_indir);
-            float pdf_indir = hit.m->pdf(wi, wo, hit.normal);
-            // if the ray hits a non-emissive object, we can continue
-            if (hit_indir.happened && !hit_indir.m->hasEmission() && pdf_indir > epsilon) {
-                Vector3f f_r = hit.m->eval(wi, wo, hit.normal);
-                float cos_theta = std::max(0.0f, dotProduct(hit.normal, wi));
-                L_indir = Scene::castRay(ray_indir, depth + 1) * f_r * cos_theta / pdf_indir / RussianRoulette;
+        if (!deltaBSDF) {
+            glm::vec3 radiance = intersec.emit.toGlm();
+            glm::vec3 wi;
+            float lightPdf;
+            sampleLight(intersec, lightPdf);
+
+            if (lightPdf > 0) {
+                float BSDFPdf = material->pdf(fromGlm(wi), fromGlm(wo), fromGlm(normal));
+                accRadiance += throughput * material->eval(fromGlm(wi), fromGlm(wo), fromGlm(normal)).toGlm() *
+                    radiance * Math::satDot(normal, wi) / lightPdf * Math::powerHeuristic(lightPdf, BSDFPdf);
             }
         }
-        radiance = L_dir + L_indir;
-        break;
-    }
-    case Metal: {
-        break;
-    }
-    case Dielectric: {
-        break;
-    }
+
+		// BSDFSample sample;
+		// material.sample(intersec.norm, intersec.wo, sample3D(rng), sample);
+        glm::vec3 dummy(0.0f); // todo: ???
+        glm::vec3 sampleDir = material->sample(fromGlm(dummy), fromGlm(normal)).normalized().toGlm();
+        glm::vec3 sampleBsdf = material->eval(ray.direction, fromGlm(sampleDir), fromGlm(normal)).toGlm();
+        float samplePdf = material->pdf(ray.direction, fromGlm(sampleDir), fromGlm(normal));
+        // if (sample.type == BSDFSampleType::Invalid) {
+        //     // Terminate path if sampling fails
+        //     break;
+        // }
+        if (samplePdf < 1e-8f) {
+            break;
+        }
+
+        // bool deltaSample = (sample.type & Specular);
+        bool deltaSample = false;
+        throughput *= sampleBsdf / samplePdf *
+            (deltaSample ? 1.f : Math::absDot(normal, sampleDir));
+
+        ray = Ray(intersec.coords, fromGlm(sampleDir), epsilon);
+
+        glm::vec3 curPos = intersec.coords.toGlm();
+        intersec = Scene::intersect(ray);
+        if (!intersec.happened) {
+            break;
+        }
+
+        wo = -ray.direction.toGlm();
+        normal = intersec.normal.toGlm();
+        material = intersec.m;
+        mateiralType = material->getType();
+
+        // hit light
+        if (material->hasEmission()) {
+            glm::vec3 radiance = material->getEmission().toGlm();
+
+            // float lightPdf = Math::pdfAreaToSolidAngle(
+            //     Math::luminance(radiance) * 2.f * glm::pi<float>() * scene->getPrimitiveArea(intersec.primId) * scene->sumLightPowerInv,
+            //     curPos, intersec.pos, intersec.norm
+            // );
+            float lightPdf;
+            sampleLight(intersec, lightPdf);
+
+            float weight = deltaSample ? 1.f : Math::powerHeuristic(samplePdf, lightPdf);
+            accRadiance += radiance * throughput * weight;
+            break;
+        }
     }
 
-    return radiance;
+    return fromGlm(accRadiance);
 }
 
 Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)

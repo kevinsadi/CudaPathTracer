@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cassert>
 #include "BVH.hpp"
+#include "MathUtils.hpp"
 
 BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
                    SplitMethod splitMethod)
@@ -113,7 +114,9 @@ Intersection BVHAccel::Intersect(const Ray& ray) const
 Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
 {
     Intersection isect;
-    const std::array<int, 3> dirIsNeg = {ray.direction.x < 0, ray.direction.y < 0,
+    // const std::array<int, 3> dirIsNeg = {ray.direction.x < 0, ray.direction.y < 0,
+    //                        ray.direction.z < 0};
+    const int dirIsNeg[3] = {ray.direction.x < 0, ray.direction.y < 0,
                            ray.direction.z < 0};
     if (!node->bounds.IntersectP(ray, ray.direction_inv, dirIsNeg))
         return isect;
@@ -139,7 +142,7 @@ void BVHAccel::getSample(BVHBuildNode* node, float p, Intersection &pos, float &
 }
 
 void BVHAccel::Sample(Intersection &pos, float &pdf){
-    float p = std::sqrt(get_random_float()) * root->area;
+    float p = glm::sqrt(get_random_float()) * root->area;
     getSample(root, p, pos, pdf);
     pdf /= root->area;
 }

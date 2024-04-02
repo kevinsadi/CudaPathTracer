@@ -7,6 +7,7 @@
 #include "Vector.hpp"
 #include "Material.hpp"
 #include "CudaPortable.hpp"
+#include "MathUtils.hpp"
 class Object;
 class Sphere;
 
@@ -16,7 +17,7 @@ struct Intersection
         happened = false;
         coords = Vector3f();
         normal = Vector3f();
-        distance = std::numeric_limits<double>::max();
+        distance = kDoubleInfinity;
         obj = nullptr;
         m = nullptr;
     }

@@ -18,7 +18,7 @@ public:
     Material* material;
     float area;
     Sphere(const Vector3f& c, const float& r, Material* mt = new Material()) : center(c), radius(r), radius2(r* r), material(mt), area(4 * Pi * r * r) {}
-    bool intersect(const Ray& ray) {
+    FUNC_QUALIFIER bool intersect(const Ray& ray) {
         // analytic solution
         Vector3f L = ray.origin - center;
         float a = dotProduct(ray.direction, ray.direction);
@@ -84,7 +84,7 @@ public:
     // sample a point on the surface of the sphere, used for area light
     FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf) {
         float theta = 2.0 * Pi * get_random_float(), phi = Pi * get_random_float();
-        Vector3f dir(std::cos(phi), std::sin(phi) * std::cos(theta), std::sin(phi) * std::sin(theta));
+        Vector3f dir(glm::cos(phi), glm::sin(phi) * glm::cos(theta), glm::sin(phi) * glm::sin(theta));
         pos.coords = center + radius * dir;
         pos.normal = dir;
         pos.emit = material->getEmission();

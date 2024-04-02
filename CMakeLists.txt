@@ -4,6 +4,9 @@ set(CMAKE_CXX_STANDARD 17)
 
 include(Macros.cmake)
 
+# add external libraries
+include_directories(${PROJECT_SOURCE_DIR}/external)
+
 add_subdirectory(common)
 add_subdirectory(cpu_path_tracer)
 add_subdirectory(gpu_path_tracer)

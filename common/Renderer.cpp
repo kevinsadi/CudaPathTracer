@@ -35,7 +35,7 @@ void Renderer::Render(const Scene& scene)
                 float x = (2 * (i + bias) / (float)scene.width - 1) * imageAspectRatio * scale;
                 float y = (1 - 2 * (j + bias) / (float)scene.height) * scale;
                 Vector3f dir = normalize(Vector3f(-x, y, 1));
-                framebuffer[m] += scene.castRay(Ray(eye_pos, dir), 0) / this->spp;  
+                framebuffer[m] += scene.castRay(Ray(eye_pos, dir)) / this->spp;  
             }
             m++;
         }

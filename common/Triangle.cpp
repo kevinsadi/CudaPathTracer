@@ -1,4 +1,5 @@
 #include "Triangle.hpp"
+#include "MathUtils.hpp"
 #include "OBJ_Loader.hpp"
 
 MeshTriangle::MeshTriangle(const std::string& filename, Material* mt) {

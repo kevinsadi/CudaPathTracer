@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
+#include <glm/glm.hpp>
 #include "CudaPortable.hpp"
 
 struct Vector3f {
@@ -19,9 +20,9 @@ public:
     FUNC_QUALIFIER Vector3f operator * (const float& r) const { return Vector3f(x * r, y * r, z * r); }
     FUNC_QUALIFIER Vector3f operator / (const float& r) const { return Vector3f(x / r, y / r, z / r); }
 
-    float norm() { return std::sqrt(x * x + y * y + z * z); }
-    Vector3f normalized() {
-        float n = std::sqrt(x * x + y * y + z * z);
+    FUNC_QUALIFIER float norm() { return glm::sqrt(x * x + y * y + z * z); }
+    FUNC_QUALIFIER Vector3f normalized() {
+        float n = glm::sqrt(x * x + y * y + z * z);
         return Vector3f(x / n, y / n, z / n);
     }
 
@@ -39,23 +40,27 @@ public:
     {
         return os << v.x << ", " << v.y << ", " << v.z;
     }
-    double       operator[](int index) const;
-    double& operator[](int index);
+    FUNC_QUALIFIER double       operator[](int index) const;
+    FUNC_QUALIFIER double& operator[](int index);
 
 
     FUNC_QUALIFIER static Vector3f Min(const Vector3f& p1, const Vector3f& p2) {
-        return Vector3f(std::min(p1.x, p2.x), std::min(p1.y, p2.y),
-            std::min(p1.z, p2.z));
+        return Vector3f(glm::min(p1.x, p2.x), glm::min(p1.y, p2.y),
+            glm::min(p1.z, p2.z));
     }
 
     FUNC_QUALIFIER static Vector3f Max(const Vector3f& p1, const Vector3f& p2) {
-        return Vector3f(std::max(p1.x, p2.x), std::max(p1.y, p2.y),
-            std::max(p1.z, p2.z));
+        return Vector3f(glm::max(p1.x, p2.x), glm::max(p1.y, p2.y),
+            glm::max(p1.z, p2.z));
+    }
+
+    FUNC_QUALIFIER inline glm::vec3 toGlm() const {
+        return glm::vec3(x, y, z);
     }
 
     CUDA_PORTABLE(Vector3f);
 };
-inline double Vector3f::operator[](int index) const {
+FUNC_QUALIFIER inline double Vector3f::operator[](int index) const {
     return (&x)[index];
 }
 
@@ -103,6 +108,10 @@ FUNC_QUALIFIER inline Vector3f crossProduct(const Vector3f& a, const Vector3f& b
     );
 }
 
+FUNC_QUALIFIER inline Vector3f fromGlm (const glm::vec3& v)
+{
+    return Vector3f(v.x, v.y, v.z);
+}
 
 
 #endif //RAYTRACING_VECTOR_H

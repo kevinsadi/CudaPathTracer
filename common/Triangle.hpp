@@ -74,7 +74,7 @@ public:
     FUNC_QUALIFIER Bounds3 getBounds() override;
     // Sample a point on the surface of the object, used for area light
     FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf) override {
-        float x = std::sqrt(get_random_float()), y = get_random_float();
+        float x = glm::sqrt(get_random_float()), y = get_random_float();
         pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
         pos.normal = this->normal;
         pdf = 1.0f / area;

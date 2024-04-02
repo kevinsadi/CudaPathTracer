@@ -6,6 +6,7 @@
 #define RAYTRACING_BOUNDS3_H
 #include "Ray.hpp"
 #include "Vector.hpp"
+#include "MathUtils.hpp"
 #include <limits>
 #include <array>
 
@@ -13,15 +14,15 @@ class Bounds3
 {
 public:
     Vector3f pMin, pMax; // two points to specify the bounding box
-    Bounds3()
+    FUNC_QUALIFIER Bounds3()
     {
-        double minNum = std::numeric_limits<double>::lowest();
-        double maxNum = std::numeric_limits<double>::max();
+        double minNum = kDoubleNegInfinity;
+        double maxNum = kDoubleInfinity;
         pMax = Vector3f(minNum, minNum, minNum);
         pMin = Vector3f(maxNum, maxNum, maxNum);
     }
-    Bounds3(const Vector3f p) : pMin(p), pMax(p) {}
-    Bounds3(const Vector3f p1, const Vector3f p2)
+    FUNC_QUALIFIER Bounds3(const Vector3f p) : pMin(p), pMax(p) {}
+    FUNC_QUALIFIER Bounds3(const Vector3f p1, const Vector3f p2)
     {
         pMin = Vector3f(fmin(p1.x, p2.x), fmin(p1.y, p2.y), fmin(p1.z, p2.z));
         pMax = Vector3f(fmax(p1.x, p2.x), fmax(p1.y, p2.y), fmax(p1.z, p2.z));
@@ -48,10 +49,10 @@ public:
     FUNC_QUALIFIER Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
     FUNC_QUALIFIER Bounds3 Intersect(const Bounds3& b)
     {
-        return Bounds3(Vector3f(fmax(pMin.x, b.pMin.x), fmax(pMin.y, b.pMin.y),
-            fmax(pMin.z, b.pMin.z)),
-            Vector3f(fmin(pMax.x, b.pMax.x), fmin(pMax.y, b.pMax.y),
-                fmin(pMax.z, b.pMax.z)));
+        return Bounds3(Vector3f(glm::max(pMin.x, b.pMin.x), glm::max(pMin.y, b.pMin.y),
+            glm::max(pMin.z, b.pMin.z)),
+            Vector3f(glm::min(pMax.x, b.pMax.x), glm::min(pMax.y, b.pMax.y),
+                glm::min(pMax.z, b.pMax.z)));
     }
 
     FUNC_QUALIFIER Vector3f Offset(const Vector3f& p) const
@@ -85,13 +86,13 @@ public:
     }
 
     FUNC_QUALIFIER inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
-        const std::array<int, 3>& dirisNeg) const;
+        const int* dirisNeg) const;
 };
 
 
 
 FUNC_QUALIFIER inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
-    const std::array<int, 3>& dirIsNeg) const
+    const int* dirIsNeg) const
 {
     // dirIsNeg[0] = invDir.x < 0;
     double tMin = ((dirIsNeg[0] ? pMax.x : pMin.x) - ray.origin.x) * invDir.x;
