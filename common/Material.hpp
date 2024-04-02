@@ -14,7 +14,7 @@ class Material {
 private:
 
     // Compute reflection direction
-    FUNC_QUALIFIER Vector3f reflect(const Vector3f& I, const Vector3f& N) const
+    FUNC_QUALIFIER inline Vector3f reflect(const Vector3f& I, const Vector3f& N) const
     {
         return I - 2 * dotProduct(I, N) * N;
     }
@@ -30,7 +30,7 @@ private:
     // If the ray is outside, you need to make cosi positive cosi = -N.I
     //
     // If the ray is inside, you need to invert the refractive indices and negate the normal N
-    FUNC_QUALIFIER Vector3f refract(const Vector3f& I, const Vector3f& N, const float& ior) const
+    FUNC_QUALIFIER inline Vector3f refract(const Vector3f& I, const Vector3f& N, const float& ior) const
     {
         float cosi = clamp(-1, 1, dotProduct(I, N));
         float etai = 1, etat = ior;
@@ -51,7 +51,7 @@ private:
     // \param ior is the material refractive index
     //
     // \param[out] kr is the amount of light reflected
-    FUNC_QUALIFIER void fresnel(const Vector3f& I, const Vector3f& N, const float& ior, float& kr) const
+    FUNC_QUALIFIER inline void fresnel(const Vector3f& I, const Vector3f& N, const float& ior, float& kr) const
     {
         float cosi = clamp(-1, 1, dotProduct(I, N));
         float etai = 1, etat = ior;
@@ -73,7 +73,7 @@ private:
         // kt = 1 - kr;
     }
 
-    FUNC_QUALIFIER Vector3f toWorld(const Vector3f& a, const Vector3f& N) {
+    FUNC_QUALIFIER inline Vector3f toWorld(const Vector3f& a, const Vector3f& N) {
         Vector3f B, C;
         if (glm::abs(N.x) > glm::abs(N.y)) {
             float invLen = 1.0f / glm::sqrt(N.x * N.x + N.z * N.z);

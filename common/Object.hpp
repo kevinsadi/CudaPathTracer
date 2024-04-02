@@ -15,16 +15,16 @@ class Object
 public:
     Object() {}
     virtual ~Object() {}
-    FUNC_QUALIFIER virtual bool intersect(const Ray& ray) = 0;
-    FUNC_QUALIFIER virtual bool intersect(const Ray& ray, float&, uint32_t&) const = 0;
-    FUNC_QUALIFIER virtual Intersection getIntersection(Ray _ray) = 0;
-    FUNC_QUALIFIER virtual void getSurfaceProperties(const Vector3f&, const Vector3f&, const uint32_t&, const Vector2f&, Vector3f&, Vector2f&) const = 0;
-    FUNC_QUALIFIER virtual Vector3f evalDiffuseColor(const Vector2f&) const = 0;
-    FUNC_QUALIFIER virtual Bounds3 getBounds() = 0;
-    FUNC_QUALIFIER virtual float getArea() = 0;
+    FUNC_QUALIFIER inline virtual bool intersect(const Ray& ray) = 0;
+    FUNC_QUALIFIER inline virtual bool intersect(const Ray& ray, float&, uint32_t&) const = 0;
+    FUNC_QUALIFIER inline virtual Intersection getIntersection(Ray _ray) = 0;
+    FUNC_QUALIFIER inline virtual void getSurfaceProperties(const Vector3f&, const Vector3f&, const uint32_t&, const Vector2f&, Vector3f&, Vector2f&) const = 0;
+    FUNC_QUALIFIER inline virtual Vector3f evalDiffuseColor(const Vector2f&) const = 0;
+    FUNC_QUALIFIER inline virtual Bounds3 getBounds() = 0;
+    FUNC_QUALIFIER inline virtual float getArea() = 0;
     // Sample a point on the surface of the object, used for area light
-    FUNC_QUALIFIER virtual void Sample(Intersection& pos, float& pdf) = 0;
-    FUNC_QUALIFIER virtual bool hasEmit() = 0;
+    FUNC_QUALIFIER inline virtual void Sample(Intersection& pos, float& pdf) = 0;
+    FUNC_QUALIFIER inline virtual bool hasEmit() = 0;
 };
 
 

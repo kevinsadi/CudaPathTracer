@@ -107,5 +107,8 @@ BVHAccel::~BVHAccel(){
     // {
     //     delete[] primitives;
     // }
-    delete root;
+    if (root)
+    {
+        delete root;
+    }
 }

@@ -55,10 +55,11 @@ static void UnregisterMemory(void* host_ptr, void* device_ptr)
 template<typename T>
 void AllocateAndRegister(const T* host, T*& device, int count)
 {
-    assert(host != nullptr);
-    T** temp_device = nullptr;
-    cudaMalloc(temp_device, sizeof(T) * count);
-    device = *temp_device;
+    if (host == nullptr)
+    {
+        throw std::runtime_error("host pointer is nullptr");
+    }
+    cudaMalloc(&device, sizeof(T) * count);
     RegisterMemory((void*)host, (void*)device);
 }
 template<typename T>
@@ -157,6 +158,7 @@ void BVHAccel::MallocCuda(BVHAccel*& device_ptr) const
         throw std::runtime_error("BVH root is null");
     }
     cudaMemcpy(device_ptr, &temp, sizeof(BVHAccel), cudaMemcpyHostToDevice);
+    temp.root = nullptr;
 }
 void BVHAccel::FreeCuda() const
 {
@@ -225,6 +227,7 @@ void MeshTriangle::MallocCuda(MeshTriangle*& device_ptr) const
     cudaMemcpy(temp.vertexIndex, this->vertexIndex, sizeof(uint32_t) * temp.num_triangles * 3, cudaMemcpyHostToDevice);
     // 3. upload triangle soup to device
     AllocateAndRegister(this->triangles, temp.triangles, temp.num_triangles);
+    UnregisterMemory((void*)this->triangles, (void*)temp.triangles); // trick, not use this often
     for (int i = 0; i < temp.num_triangles; i++)
     {
         // allocate triangle on continuous memory
@@ -236,6 +239,10 @@ void MeshTriangle::MallocCuda(MeshTriangle*& device_ptr) const
     this->bvh->MallocCuda(temp.bvh);
 
     cudaMemcpy(device_ptr, &temp, sizeof(MeshTriangle), cudaMemcpyHostToDevice);
+    temp.vertices = nullptr;
+    temp.stCoordinates = nullptr;
+    temp.vertexIndex = nullptr;
+    temp.bvh = nullptr;
 }
 void MeshTriangle::FreeCuda() const
 {
@@ -248,7 +255,7 @@ void MeshTriangle::FreeCuda() const
     {
         this->triangles[i].FreeCuda();
     }
-    FreeAndUnregister(this->triangles);
+    // FreeAndUnregister(this->triangles);
     // 3. free bvh
     this->bvh->FreeCuda();
 
@@ -261,10 +268,7 @@ void Scene::MallocCuda(Scene*& device_ptr) const
     Scene temp = *this;
     assert(this->meshes_data != nullptr);
     assert(this->bvh != nullptr);
-    // 1. upload bvh
-    temp.bvh = nullptr;
-    this->bvh->MallocCuda(temp.bvh);
-    // 2. upload material
+    // 1. upload material
     AllocateAndRegister(this->materials_data, temp.materials_data, this->num_materials);
     Material** temp_materials = new Material * [this->num_materials];
     for (int i = 0; i < this->num_materials; i++)
@@ -274,7 +278,7 @@ void Scene::MallocCuda(Scene*& device_ptr) const
     }
     cudaMemcpy(temp.materials_data, temp_materials, sizeof(Material*) * this->num_materials, cudaMemcpyHostToDevice);
     delete[] temp_materials;
-    // 3. upload meshes
+    // 2. upload meshes
     AllocateAndRegister(this->meshes_data, temp.meshes_data, this->num_meshes);
     MeshTriangle** temp_meshes = new MeshTriangle * [this->num_meshes];
     for (int i = 0; i < this->num_meshes; i++)
@@ -284,6 +288,9 @@ void Scene::MallocCuda(Scene*& device_ptr) const
     }
     cudaMemcpy(temp.meshes_data, temp_meshes, sizeof(MeshTriangle*) * this->num_meshes, cudaMemcpyHostToDevice);
     delete[] temp_meshes;
+    // 3. upload bvh
+    temp.bvh = nullptr;
+    this->bvh->MallocCuda(temp.bvh);
 
     cudaMemcpy(device_ptr, &temp, sizeof(Scene), cudaMemcpyHostToDevice);
 }

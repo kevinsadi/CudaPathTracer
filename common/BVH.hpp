@@ -29,11 +29,11 @@ public:
 
     // BVHAccel Public Methods
     BVHAccel(std::vector<Object*> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod::NAIVE);
-    FUNC_QUALIFIER Bounds3 WorldBound() const;
+    FUNC_QUALIFIER inline Bounds3 WorldBound() const;
     ~BVHAccel();
 
-    FUNC_QUALIFIER Intersection Intersect(const Ray& ray) const;
-    FUNC_QUALIFIER Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
+    FUNC_QUALIFIER inline Intersection Intersect(const Ray& ray) const;
+    FUNC_QUALIFIER inline Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
     BVHBuildNode* root;
 
     // BVHAccel Private Methods
@@ -46,8 +46,8 @@ public:
     // Object** primitives = nullptr;
     // int num_primitives = 0;
 
-    FUNC_QUALIFIER void getSample(BVHBuildNode* node, float p, Intersection& pos, float& pdf);
-    FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf);
+    FUNC_QUALIFIER inline void getSample(BVHBuildNode* node, float p, Intersection& pos, float& pdf);
+    FUNC_QUALIFIER inline void Sample(Intersection& pos, float& pdf);
 
     CUDA_PORTABLE(BVHAccel);
 };
@@ -85,8 +85,8 @@ Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
     Intersection isect;
     // const std::array<int, 3> dirIsNeg = {ray.direction.x < 0, ray.direction.y < 0,
     //                        ray.direction.z < 0};
-    const int dirIsNeg[3] = {ray.direction.x < 0, ray.direction.y < 0,
-                           ray.direction.z < 0};
+    const int dirIsNeg[3] = { ray.direction.x < 0, ray.direction.y < 0,
+                           ray.direction.z < 0 };
     if (!node->bounds.IntersectP(ray, ray.direction_inv, dirIsNeg))
         return isect;
     // leaf node
@@ -100,17 +100,17 @@ Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
 }
 
 
-void BVHAccel::getSample(BVHBuildNode* node, float p, Intersection &pos, float &pdf){
-    if(node->left == nullptr || node->right == nullptr){
+void BVHAccel::getSample(BVHBuildNode* node, float p, Intersection& pos, float& pdf) {
+    if (node->left == nullptr || node->right == nullptr) {
         node->object->Sample(pos, pdf);
         pdf *= node->area;
         return;
     }
-    if(p < node->left->area) getSample(node->left, p, pos, pdf);
+    if (p < node->left->area) getSample(node->left, p, pos, pdf);
     else getSample(node->right, p - node->left->area, pos, pdf);
 }
 
-void BVHAccel::Sample(Intersection &pos, float &pdf){
+void BVHAccel::Sample(Intersection& pos, float& pdf) {
     float p = glm::sqrt(get_random_float()) * root->area;
     getSample(root, p, pos, pdf);
     pdf /= root->area;

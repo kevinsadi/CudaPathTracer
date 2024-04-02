@@ -70,5 +70,5 @@ MeshTriangle::~MeshTriangle() {
     if (vertices) delete[] vertices;
     if (vertexIndex) delete[] vertexIndex;
     if (stCoordinates) delete[] stCoordinates;
-    delete bvh;
+    if (bvh) delete bvh;
 }

@@ -14,22 +14,22 @@ class Bounds3
 {
 public:
     Vector3f pMin, pMax; // two points to specify the bounding box
-    FUNC_QUALIFIER Bounds3()
+    FUNC_QUALIFIER inline Bounds3()
     {
         double minNum = kDoubleNegInfinity;
         double maxNum = kDoubleInfinity;
         pMax = Vector3f(minNum, minNum, minNum);
         pMin = Vector3f(maxNum, maxNum, maxNum);
     }
-    FUNC_QUALIFIER Bounds3(const Vector3f p) : pMin(p), pMax(p) {}
-    FUNC_QUALIFIER Bounds3(const Vector3f p1, const Vector3f p2)
+    FUNC_QUALIFIER inline Bounds3(const Vector3f p) : pMin(p), pMax(p) {}
+    FUNC_QUALIFIER inline Bounds3(const Vector3f p1, const Vector3f p2)
     {
         pMin = Vector3f(fmin(p1.x, p2.x), fmin(p1.y, p2.y), fmin(p1.z, p2.z));
         pMax = Vector3f(fmax(p1.x, p2.x), fmax(p1.y, p2.y), fmax(p1.z, p2.z));
     }
 
-    FUNC_QUALIFIER Vector3f Diagonal() const { return pMax - pMin; }
-    FUNC_QUALIFIER int maxExtent() const
+    FUNC_QUALIFIER inline Vector3f Diagonal() const { return pMax - pMin; }
+    FUNC_QUALIFIER inline int maxExtent() const
     {
         Vector3f d = Diagonal();
         if (d.x > d.y && d.x > d.z)
@@ -40,14 +40,14 @@ public:
             return 2;
     }
 
-    FUNC_QUALIFIER double SurfaceArea() const
+    FUNC_QUALIFIER inline double SurfaceArea() const
     {
         Vector3f d = Diagonal();
         return 2 * (d.x * d.y + d.x * d.z + d.y * d.z);
     }
 
-    FUNC_QUALIFIER Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
-    FUNC_QUALIFIER Bounds3 Intersect(const Bounds3& b)
+    FUNC_QUALIFIER inline Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
+    FUNC_QUALIFIER inline Bounds3 Intersect(const Bounds3& b)
     {
         return Bounds3(Vector3f(glm::max(pMin.x, b.pMin.x), glm::max(pMin.y, b.pMin.y),
             glm::max(pMin.z, b.pMin.z)),
@@ -55,7 +55,7 @@ public:
                 glm::min(pMax.z, b.pMax.z)));
     }
 
-    FUNC_QUALIFIER Vector3f Offset(const Vector3f& p) const
+    FUNC_QUALIFIER inline Vector3f Offset(const Vector3f& p) const
     {
         Vector3f o = p - pMin;
         if (pMax.x > pMin.x)
@@ -67,7 +67,7 @@ public:
         return o;
     }
 
-    FUNC_QUALIFIER bool Overlaps(const Bounds3& b1, const Bounds3& b2)
+    FUNC_QUALIFIER inline bool Overlaps(const Bounds3& b1, const Bounds3& b2)
     {
         bool x = (b1.pMax.x >= b2.pMin.x) && (b1.pMin.x <= b2.pMax.x);
         bool y = (b1.pMax.y >= b2.pMin.y) && (b1.pMin.y <= b2.pMax.y);
@@ -75,7 +75,7 @@ public:
         return (x && y && z);
     }
 
-    FUNC_QUALIFIER bool Inside(const Vector3f& p, const Bounds3& b)
+    FUNC_QUALIFIER inline bool Inside(const Vector3f& p, const Bounds3& b)
     {
         return (p.x >= b.pMin.x && p.x <= b.pMax.x && p.y >= b.pMin.y &&
             p.y <= b.pMax.y && p.z >= b.pMin.z && p.z <= b.pMax.z);

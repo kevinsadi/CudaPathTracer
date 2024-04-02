@@ -20,19 +20,19 @@
 #define kFloatInfinity 3.402823466e+38F
 #define kFloatNegInfinity -kFloatInfinity
 
-FUNC_QUALIFIER inline void swap(float &a, float &b)
+FUNC_QUALIFIER inline void swap(float& a, float& b)
 {
     float temp = a;
     a = b;
     b = temp;
 }
 
-FUNC_QUALIFIER inline float clamp(const float &lo, const float &hi, const float &v)
+FUNC_QUALIFIER inline float clamp(const float& lo, const float& hi, const float& v)
 {
     return glm::max(lo, glm::min(hi, v));
 }
 
-FUNC_QUALIFIER inline bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float &x1)
+FUNC_QUALIFIER inline bool solveQuadratic(const float& a, const float& b, const float& c, float& x0, float& x1)
 {
     float discr = b * b - 4 * a * c;
     if (discr < 0)
@@ -64,7 +64,7 @@ FUNC_QUALIFIER inline float get_random_float()
 #endif
 }
 
-static std::string vec3ToString(const glm::vec3 &vec)
+static std::string vec3ToString(const glm::vec3& vec)
 {
     std::stringstream ss;
     ss << "{ x = " << vec.x << ", y = " << vec.y << ", z = " << vec.z << " }";
@@ -73,7 +73,7 @@ static std::string vec3ToString(const glm::vec3 &vec)
 
 namespace Math
 {
-    FUNC_QUALIFIER glm::mat4 buildTransformationMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale){
+    FUNC_QUALIFIER inline glm::mat4 buildTransformationMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale) {
         glm::mat4 translationMat = glm::translate(glm::mat4(), translation);
         glm::mat4 rotationMat = glm::rotate(glm::mat4(), rotation.x * Pi / 180.f, glm::vec3(1.f, 0.f, 0.f));
         rotationMat = rotationMat * glm::rotate(glm::mat4(), rotation.y * Pi / 180.f, glm::vec3(0.f, 1.f, 0.f));
@@ -82,7 +82,7 @@ namespace Math
         return translationMat * rotationMat * scaleMat;
     }
     template <typename T>
-    FUNC_QUALIFIER bool between(const T &x, const T &min, const T &max)
+    FUNC_QUALIFIER inline bool between(const T& x, const T& min, const T& max)
     {
         return x >= min && x <= max;
     }
@@ -124,7 +124,7 @@ namespace Math
         return glm::normalize(glm::cross(v1 - v0, v2 - v0));
     }
 
-    FUNC_QUALIFIER static glm::vec3 sampleTriangleUniform(
+    FUNC_QUALIFIER inline static glm::vec3 sampleTriangleUniform(
         glm::vec3 v0, glm::vec3 v1, glm::vec3 v2, float ru, float rv)
     {
         float r = glm::sqrt(rv);
@@ -164,27 +164,27 @@ namespace Math
     /**
      * Map a pair of evenly distributed [0, 1] coordinate to disc
      */
-    FUNC_QUALIFIER static glm::vec2 toConcentricDisk(float x, float y)
+    FUNC_QUALIFIER inline static glm::vec2 toConcentricDisk(float x, float y)
     {
         float r = glm::sqrt(x);
         float theta = y * Pi * 2.0f;
         return glm::vec2(glm::cos(theta), glm::sin(theta)) * r;
     }
 
-    FUNC_QUALIFIER static glm::vec3 toSphere(glm::vec2 v)
+    FUNC_QUALIFIER inline static glm::vec3 toSphere(glm::vec2 v)
     {
         v *= glm::vec2(PiTwo, Pi);
         return glm::vec3(glm::cos(v.x) * glm::sin(v.y), glm::cos(v.y), glm::sin(v.x) * glm::sin(v.y));
     }
 
-    FUNC_QUALIFIER static glm::vec2 toPlane(glm::vec3 v)
+    FUNC_QUALIFIER inline static glm::vec2 toPlane(glm::vec3 v)
     {
         return glm::vec2(
             glm::fract(glm::atan(v.z, v.x) * PiInv * .5f + 1.f),
             glm::atan(glm::length(glm::vec2(v.x, v.z)), v.y) * PiInv);
     }
 
-    FUNC_QUALIFIER static glm::mat3 localRefMatrix(glm::vec3 n)
+    FUNC_QUALIFIER inline static glm::mat3 localRefMatrix(glm::vec3 n)
     {
         glm::vec3 t = (glm::abs(n.y) > 0.9999f) ? glm::vec3(0.f, 0.f, 1.f) : glm::vec3(0.f, 1.f, 0.f);
         glm::vec3 b = glm::normalize(glm::cross(n, t));
@@ -192,19 +192,19 @@ namespace Math
         return glm::mat3(t, b, n);
     }
 
-    FUNC_QUALIFIER static glm::vec3 localToWorld(glm::vec3 n, glm::vec3 v)
+    FUNC_QUALIFIER inline static glm::vec3 localToWorld(glm::vec3 n, glm::vec3 v)
     {
         return glm::normalize(localRefMatrix(n) * v);
     }
 
-    FUNC_QUALIFIER static glm::vec3 sampleHemisphereCosine(glm::vec3 n, float rx, float ry)
+    FUNC_QUALIFIER inline static glm::vec3 sampleHemisphereCosine(glm::vec3 n, float rx, float ry)
     {
         glm::vec2 d = toConcentricDisk(rx, ry);
         float z = glm::sqrt(1.f - glm::dot(d, d));
         return localToWorld(n, glm::vec3(d, z));
     }
 
-    FUNC_QUALIFIER static bool refract(glm::vec3 n, glm::vec3 wi, float ior, glm::vec3 &wt)
+    FUNC_QUALIFIER inline static bool refract(glm::vec3 n, glm::vec3 wi, float ior, glm::vec3& wt)
     {
         float cosIn = glm::dot(n, wi);
         if (cosIn < 0)

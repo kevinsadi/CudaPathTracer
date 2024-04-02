@@ -52,6 +52,11 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         white->m_albedo = Vector3f(0.725f, 0.71f, 0.68f);
         Material* light = new Material(Lambert, (8.0f * Vector3f(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * Vector3f(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * Vector3f(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
         light->m_albedo = Vector3f(0.65f);
+        
+        scene.AddMaterial(red);
+        scene.AddMaterial(green);
+        scene.AddMaterial(white);
+        scene.AddMaterial(light);
 
         auto floor = new MeshTriangle("models/cornellbox/floor.obj", white);
         auto shortbox = new MeshTriangle("models/cornellbox/shortbox.obj", white);

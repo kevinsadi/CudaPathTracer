@@ -13,7 +13,7 @@ class Sphere;
 
 struct Intersection
 {
-    FUNC_QUALIFIER Intersection() {
+    FUNC_QUALIFIER inline Intersection() {
         happened = false;
         coords = Vector3f();
         normal = Vector3f();

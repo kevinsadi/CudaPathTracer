@@ -58,11 +58,11 @@ public:
 
     // const std::vector<Object *> &get_objects() const { return objects; }
     // const std::vector<std::unique_ptr<Light>> &get_lights() const { return lights; }
-    FUNC_QUALIFIER Intersection intersect(const Ray& ray) const;
+    FUNC_QUALIFIER inline Intersection intersect(const Ray& ray) const;
     void buildBVH();
-    FUNC_QUALIFIER Vector3f castRay(const Ray& eyeRay) const;
-    FUNC_QUALIFIER void sampleLight(Intersection& pos, float& pdf) const;
-    // FUNC_QUALIFIER bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
+    FUNC_QUALIFIER inline Vector3f castRay(const Ray& eyeRay) const;
+    FUNC_QUALIFIER inline void sampleLight(Intersection& pos, float& pdf) const;
+    // FUNC_QUALIFIER inline bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
     // std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,
     //                                                const Vector3f &shadowPointOrig,
     //                                                const std::vector<Object *> &objects, uint32_t &index,
@@ -73,7 +73,7 @@ public:
     // std::vector<std::unique_ptr<Light>> lights;
 
     // Compute reflection direction
-    FUNC_QUALIFIER Vector3f reflect(const Vector3f& I, const Vector3f& N) const {
+    FUNC_QUALIFIER inline Vector3f reflect(const Vector3f& I, const Vector3f& N) const {
         return I - 2 * dotProduct(I, N) * N;
     }
 
@@ -158,8 +158,8 @@ Vector3f Scene::castRay(const Ray& eyeRay) const {
             }
         }
 
-		// BSDFSample sample;
-		// material.sample(intersec.norm, intersec.wo, sample3D(rng), sample);
+        // BSDFSample sample;
+        // material.sample(intersec.norm, intersec.wo, sample3D(rng), sample);
         glm::vec3 dummy(0.0f); // todo: ???
         glm::vec3 sampleDir = material->sample(fromGlm(dummy), fromGlm(normal)).normalized().toGlm();
         glm::vec3 sampleBsdf = material->eval(ray.direction, fromGlm(sampleDir), fromGlm(normal)).toGlm();
