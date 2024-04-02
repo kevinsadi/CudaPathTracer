@@ -12,14 +12,14 @@ struct Ray {
     double t;//transportation time,
     double t_min, t_max;
 
-    __host__ __device__ Ray(const Vector3f& ori, const Vector3f& dir, const double _t = 0.0) : origin(ori), direction(dir), t(_t) {
+    FUNC_QUALIFIER Ray(const Vector3f& ori, const Vector3f& dir, const double _t = 0.0) : origin(ori), direction(dir), t(_t) {
         direction_inv = Vector3f(1. / direction.x, 1. / direction.y, 1. / direction.z);
         t_min = 0.0;
         t_max = std::numeric_limits<double>::max();
 
     }
 
-    __host__ __device__ Vector3f operator()(double t) const { return origin + direction * t; }
+    FUNC_QUALIFIER Vector3f operator()(double t) const { return origin + direction * t; }
 
     friend std::ostream& operator<<(std::ostream& os, const Ray& r) {
         os << "[origin:=" << r.origin << ", direction=" << r.direction << ", time=" << r.t << "]\n";

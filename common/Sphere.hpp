@@ -17,7 +17,7 @@ public:
     float radius, radius2;
     Material* material;
     float area;
-    Sphere(const Vector3f &c, const float &r, Material* mt = new Material()) : center(c), radius(r), radius2(r * r), m(mt), area(4 * Pi *r *r) {}
+    Sphere(const Vector3f& c, const float& r, Material* mt = new Material()) : center(c), radius(r), radius2(r* r), material(mt), area(4 * Pi * r * r) {}
     bool intersect(const Ray& ray) {
         // analytic solution
         Vector3f L = ray.origin - center;
@@ -31,7 +31,7 @@ public:
         if (t0 < 0) return false;
         return true;
     }
-    __host__ __device__ bool intersect(const Ray& ray, float& tnear, uint32_t& index) const
+    FUNC_QUALIFIER bool intersect(const Ray& ray, float& tnear, uint32_t& index) const
     {
         // analytic solution
         Vector3f L = ray.origin - center;
@@ -47,7 +47,7 @@ public:
 
         return true;
     }
-    __host__ __device__ Intersection getIntersection(Ray ray) {
+    FUNC_QUALIFIER Intersection getIntersection(Ray ray) {
         Intersection result;
         result.happened = false;
         Vector3f L = ray.origin - center;
@@ -68,32 +68,32 @@ public:
         return result;
 
     }
-    __host__ __device__ void getSurfaceProperties(const Vector3f& P, const Vector3f& I, const uint32_t& index, const Vector2f& uv, Vector3f& N, Vector2f& st) const
+    FUNC_QUALIFIER void getSurfaceProperties(const Vector3f& P, const Vector3f& I, const uint32_t& index, const Vector2f& uv, Vector3f& N, Vector2f& st) const
     {
         N = normalize(P - center);
     }
 
-    __host__ __device__ Vector3f evalDiffuseColor(const Vector2f& st) const {
+    FUNC_QUALIFIER Vector3f evalDiffuseColor(const Vector2f& st) const {
         //return m->getColor();
         return material->m_albedo;
     }
-    __host__ __device__ Bounds3 getBounds() {
+    FUNC_QUALIFIER Bounds3 getBounds() {
         return Bounds3(Vector3f(center.x - radius, center.y - radius, center.z - radius),
             Vector3f(center.x + radius, center.y + radius, center.z + radius));
     }
     // sample a point on the surface of the sphere, used for area light
-    __host__ __device__ void Sample(Intersection &pos, float &pdf){
+    FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf) {
         float theta = 2.0 * Pi * get_random_float(), phi = Pi * get_random_float();
-        Vector3f dir(std::cos(phi), std::sin(phi)*std::cos(theta), std::sin(phi)*std::sin(theta));
+        Vector3f dir(std::cos(phi), std::sin(phi) * std::cos(theta), std::sin(phi) * std::sin(theta));
         pos.coords = center + radius * dir;
         pos.normal = dir;
         pos.emit = material->getEmission();
         pdf = 1.0f / area;
     }
-    __host__ __device__ float getArea() {
+    FUNC_QUALIFIER float getArea() {
         return area;
     }
-    __host__ __device__ bool hasEmit() {
+    FUNC_QUALIFIER bool hasEmit() {
         return material->hasEmission();
     }
     CUDA_PORTABLE(Sphere);

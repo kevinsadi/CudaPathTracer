@@ -29,12 +29,12 @@ public:
 
     // BVHAccel Public Methods
     BVHAccel(std::vector<Object*> p, int maxPrimsInNode = 1, SplitMethod splitMethod = SplitMethod::NAIVE);
-    __host__ __device__ Bounds3 WorldBound() const;
+    FUNC_QUALIFIER Bounds3 WorldBound() const;
     ~BVHAccel();
 
-    __host__ __device__ Intersection Intersect(const Ray &ray) const;
-    __host__ __device__ Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
-    __host__ __device__ bool IntersectP(const Ray &ray) const;
+    FUNC_QUALIFIER Intersection Intersect(const Ray& ray) const;
+    FUNC_QUALIFIER Intersection getIntersection(BVHBuildNode* node, const Ray& ray)const;
+    FUNC_QUALIFIER bool IntersectP(const Ray& ray) const;
     BVHBuildNode* root;
 
     // BVHAccel Private Methods
@@ -47,23 +47,23 @@ public:
     // Object** primitives = nullptr;
     // int num_primitives = 0;
 
-    __host__ __device__ void getSample(BVHBuildNode* node, float p, Intersection &pos, float &pdf);
-    __host__ __device__ void Sample(Intersection &pos, float &pdf);
+    FUNC_QUALIFIER void getSample(BVHBuildNode* node, float p, Intersection& pos, float& pdf);
+    FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf);
 
     CUDA_PORTABLE(BVHAccel);
 };
 
 struct BVHBuildNode {
     Bounds3 bounds;
-    BVHBuildNode *left;
-    BVHBuildNode *right;
+    BVHBuildNode* left;
+    BVHBuildNode* right;
     Object* object;
     float area;
 
 public:
-    int splitAxis=0, firstPrimOffset=0, nPrimitives=0;
+    int splitAxis = 0, firstPrimOffset = 0, nPrimitives = 0;
     // BVHBuildNode Public Methods
-    BVHBuildNode(){
+    BVHBuildNode() {
         bounds = Bounds3();
         left = nullptr;right = nullptr;
         object = nullptr;

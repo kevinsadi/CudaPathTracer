@@ -58,11 +58,11 @@ public:
 
     // const std::vector<Object *> &get_objects() const { return objects; }
     // const std::vector<std::unique_ptr<Light>> &get_lights() const { return lights; }
-    __host__ __device__ Intersection intersect(const Ray& ray) const;
+    FUNC_QUALIFIER Intersection intersect(const Ray& ray) const;
     void buildBVH();
-    __host__ __device__ Vector3f castRay(const Ray& ray, int depth) const;
-    __host__ __device__ void sampleLight(Intersection& pos, float& pdf) const;
-    __host__ __device__ bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
+    FUNC_QUALIFIER Vector3f castRay(const Ray& ray, int depth) const;
+    FUNC_QUALIFIER void sampleLight(Intersection& pos, float& pdf) const;
+    FUNC_QUALIFIER bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
     // std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,
     //                                                const Vector3f &shadowPointOrig,
     //                                                const std::vector<Object *> &objects, uint32_t &index,
@@ -73,7 +73,7 @@ public:
     // std::vector<std::unique_ptr<Light>> lights;
 
     // Compute reflection direction
-    __host__ __device__ Vector3f reflect(const Vector3f& I, const Vector3f& N) const {
+    FUNC_QUALIFIER Vector3f reflect(const Vector3f& I, const Vector3f& N) const {
         return I - 2 * dotProduct(I, N) * N;
     }
 

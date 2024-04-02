@@ -12,13 +12,13 @@ class Sphere;
 
 struct Intersection
 {
-    __host__ __device__ Intersection(){
-        happened=false;
-        coords=Vector3f();
-        normal=Vector3f();
-        distance= std::numeric_limits<double>::max();
-        obj =nullptr;
-        m=nullptr;
+    FUNC_QUALIFIER Intersection() {
+        happened = false;
+        coords = Vector3f();
+        normal = Vector3f();
+        distance = std::numeric_limits<double>::max();
+        obj = nullptr;
+        m = nullptr;
     }
     bool happened;
     Vector3f coords;

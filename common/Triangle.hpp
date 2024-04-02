@@ -4,11 +4,11 @@
 #include "Intersection.hpp"
 #include "Material.hpp"
 #include "Object.hpp"
-#include "global.hpp"
+#include "MathUtils.hpp"
 #include <cassert>
 #include <array>
 
-__host__ __device__ static bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
+FUNC_QUALIFIER static bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
     const Vector3f& v2, const Vector3f& orig,
     const Vector3f& dir, float& tnear, float& u, float& v)
 {
@@ -48,9 +48,8 @@ public:
     float area = -1;
     Material* material = nullptr;
 
-    Triangle() = default;
-
-    __host__ __device__ Triangle(Vector3f _v0, Vector3f _v1, Vector3f _v2, Material* _m = nullptr)
+    FUNC_QUALIFIER Triangle() {}
+    FUNC_QUALIFIER Triangle(Vector3f _v0, Vector3f _v1, Vector3f _v2, Material* _m = nullptr)
         : v0(_v0), v1(_v1), v2(_v2), material(_m)
     {
         e1 = v1 - v0;
@@ -59,11 +58,11 @@ public:
         area = crossProduct(e1, e2).norm() * 0.5f;
     }
 
-    __host__ __device__ bool intersect(const Ray& ray) override;
-    __host__ __device__ bool intersect(const Ray& ray, float& tnear,
+    FUNC_QUALIFIER bool intersect(const Ray& ray) override;
+    FUNC_QUALIFIER bool intersect(const Ray& ray, float& tnear,
         uint32_t& index) const override;
-    __host__ __device__ Intersection getIntersection(Ray ray) override;
-    __host__ __device__ void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
+    FUNC_QUALIFIER Intersection getIntersection(Ray ray) override;
+    FUNC_QUALIFIER void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
         const uint32_t& index, const Vector2f& uv,
         Vector3f& N, Vector2f& st) const override
     {
@@ -71,19 +70,19 @@ public:
         //        throw std::runtime_error("triangle::getSurfaceProperties not
         //        implemented.");
     }
-    __host__ __device__ Vector3f evalDiffuseColor(const Vector2f&) const override;
-    __host__ __device__ Bounds3 getBounds() override;
-    // // Sample a point on the surface of the object, used for area light
-    // __host__ __device__ void Sample(Intersection& pos, float& pdf) override {
-    //     float x = std::sqrt(get_random_float()), y = get_random_float();
-    //     pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
-    //     pos.normal = this->normal;
-    //     pdf = 1.0f / area;
-    // }
-    __host__ __device__ float getArea() override {
+    FUNC_QUALIFIER Vector3f evalDiffuseColor(const Vector2f&) const override;
+    FUNC_QUALIFIER Bounds3 getBounds() override;
+    // Sample a point on the surface of the object, used for area light
+    FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf) override {
+        float x = std::sqrt(get_random_float()), y = get_random_float();
+        pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
+        pos.normal = this->normal;
+        pdf = 1.0f / area;
+    }
+    FUNC_QUALIFIER float getArea() override {
         return area;
     }
-    __host__ __device__ bool hasEmit() override {
+    FUNC_QUALIFIER bool hasEmit() override {
         return material->hasEmission();
     }
 
@@ -96,9 +95,9 @@ public:
     MeshTriangle(const std::string& filename, Material* mt = new Material());
     ~MeshTriangle();
 
-    __host__ __device__ bool intersect(const Ray& ray) override { return true; }
+    FUNC_QUALIFIER bool intersect(const Ray& ray) override { return true; }
 
-    __host__ __device__ bool intersect(const Ray& ray, float& tnear, uint32_t& index) const override
+    FUNC_QUALIFIER bool intersect(const Ray& ray, float& tnear, uint32_t& index) const override
     {
         bool intersect = false;
         for (uint32_t k = 0; k < numTriangles; ++k) {
@@ -118,9 +117,9 @@ public:
         return intersect;
     }
 
-    __host__ __device__ Bounds3 getBounds() override { return bounding_box; }
+    FUNC_QUALIFIER Bounds3 getBounds() override { return bounding_box; }
 
-    __host__ __device__ void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
+    FUNC_QUALIFIER void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
         const uint32_t& index, const Vector2f& uv,
         Vector3f& N, Vector2f& st) const override
     {
@@ -136,7 +135,7 @@ public:
         st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
     }
 
-    __host__ __device__ Vector3f evalDiffuseColor(const Vector2f& st) const override
+    FUNC_QUALIFIER Vector3f evalDiffuseColor(const Vector2f& st) const override
     {
         float scale = 5;
         float pattern =
@@ -145,7 +144,7 @@ public:
             Vector3f(0.937, 0.937, 0.231), pattern);
     }
 
-    __host__ __device__ Intersection getIntersection(Ray ray) override
+    FUNC_QUALIFIER Intersection getIntersection(Ray ray) override
     {
         Intersection intersec;
 
@@ -156,14 +155,14 @@ public:
         return intersec;
     }
     // Sample a point on the surface of the object, used for area light
-    __host__ __device__ void Sample(Intersection& pos, float& pdf) override {
+    FUNC_QUALIFIER void Sample(Intersection& pos, float& pdf) override {
         bvh->Sample(pos, pdf);
         pos.emit = material->getEmission();
     }
-    __host__ __device__ float getArea() override {
+    FUNC_QUALIFIER float getArea() override {
         return area;
     }
-    __host__ __device__ bool hasEmit() override {
+    FUNC_QUALIFIER bool hasEmit() override {
         return material->hasEmission();
     }
 
@@ -186,16 +185,16 @@ public:
     CUDA_PORTABLE(MeshTriangle);
 };
 
-__host__ __device__ inline bool Triangle::intersect(const Ray& ray) { return true; }
-__host__ __device__ inline bool Triangle::intersect(const Ray& ray, float& tnear,
+FUNC_QUALIFIER inline bool Triangle::intersect(const Ray& ray) { return true; }
+FUNC_QUALIFIER inline bool Triangle::intersect(const Ray& ray, float& tnear,
     uint32_t& index) const
 {
     return false;
 }
 
-__host__ __device__ inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
+FUNC_QUALIFIER inline Bounds3 Triangle::getBounds() { return Union(Bounds3(v0, v1), v2); }
 
-__host__ __device__ inline Intersection Triangle::getIntersection(Ray ray)
+FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
 {
     Intersection inter;
 
@@ -231,7 +230,7 @@ __host__ __device__ inline Intersection Triangle::getIntersection(Ray ray)
     return inter;
 }
 
-__host__ __device__ inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
+FUNC_QUALIFIER inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
 {
     return Vector3f(0.5, 0.5, 0.5);
 }
