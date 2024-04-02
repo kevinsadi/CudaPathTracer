@@ -8,7 +8,7 @@
 #include <iostream>
 #include <cmath>
 #include <algorithm>
-#include <glm/glm.hpp>
+#include "MathUtils.hpp"
 #include "CudaPortable.hpp"
 
 struct Vector3f {

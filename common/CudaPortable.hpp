@@ -3,10 +3,12 @@
 // like Triangle, Sphere, etc.
 // 2. if a class has member pointer to another class, you need to make it portable and handle the alloc/free manually
 #ifdef GPU_PATH_TRACER
+#include <cuda.h>
+#include <cuda_runtime.h>
 #define CUDA_PORTABLE(CLASS_NAME) \
     void MallocCuda(CLASS_NAME*& device_ptr) const;\
     void FreeCuda() const;
-#define FUNC_QUALIFIER __host__ __device__
+#define FUNC_QUALIFIER __device__ __host__
 #else
 #define FUNC_QUALIFIER 
 #define CUDA_PORTABLE(CLASS_NAME) 

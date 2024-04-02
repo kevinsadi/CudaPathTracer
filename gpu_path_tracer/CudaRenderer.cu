@@ -1,7 +1,7 @@
 #include "CudaRenderer.hpp"
 #include "CudaPathTrace.h"
+#include <common/Scene.hpp>
 #include <common/MathUtils.hpp>
-#include <glm/glm.hpp>
 #include <cuda.h>
 #include <curand.h>
 #include <curand_kernel.h>
@@ -28,6 +28,7 @@ __global__ void SingleKernelRayTracing(Scene* scene_gpu, curandState* rng_gpu, V
         float y = (1 - 2 * (j + bias) / (float)scene_gpu->height) * scale;
         Vector3f dir = normalize(Vector3f(-x, y, 1));
         framebuffer[tid] += scene_gpu->castRay(Ray(eye_pos, dir)) / spp;
+        // framebuffer[tid] += Vector3f(1.0f);
     }
 }
 

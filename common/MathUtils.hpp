@@ -52,12 +52,16 @@ FUNC_QUALIFIER inline bool solveQuadratic(const float &a, const float &b, const 
 
 FUNC_QUALIFIER inline float get_random_float()
 {
+#ifdef GPU_PATH_TRACER
+    return 0.5f; // todo
+#else
     // return 0.5f;// todo
     static std::random_device dev;
     static std::mt19937 rng(dev());
     static std::uniform_real_distribution<float> dist(0.f, 1.f); // distribution in range [1, 6]
 
     return dist(rng);
+#endif
 }
 
 static std::string vec3ToString(const glm::vec3 &vec)
@@ -69,8 +73,14 @@ static std::string vec3ToString(const glm::vec3 &vec)
 
 namespace Math
 {
-    FUNC_QUALIFIER glm::mat4 buildTransformationMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale);
-
+    FUNC_QUALIFIER glm::mat4 buildTransformationMatrix(glm::vec3 translation, glm::vec3 rotation, glm::vec3 scale){
+        glm::mat4 translationMat = glm::translate(glm::mat4(), translation);
+        glm::mat4 rotationMat = glm::rotate(glm::mat4(), rotation.x * Pi / 180.f, glm::vec3(1.f, 0.f, 0.f));
+        rotationMat = rotationMat * glm::rotate(glm::mat4(), rotation.y * Pi / 180.f, glm::vec3(0.f, 1.f, 0.f));
+        rotationMat = rotationMat * glm::rotate(glm::mat4(), rotation.z * Pi / 180.f, glm::vec3(0.f, 0.f, 1.f));
+        glm::mat4 scaleMat = glm::scale(glm::mat4(), scale);
+        return translationMat * rotationMat * scaleMat;
+    }
     template <typename T>
     FUNC_QUALIFIER bool between(const T &x, const T &min, const T &max)
     {

@@ -8,6 +8,7 @@
 #include <common/Sphere.hpp>
 #include <common/Scene.hpp>
 #include <cuda.h>
+#include <cuda_runtime.h>
 #include <unordered_map>
 
 // key: host ptr, value: device ptr
