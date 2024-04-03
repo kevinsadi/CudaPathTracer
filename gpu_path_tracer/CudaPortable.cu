@@ -1,6 +1,5 @@
 #include "CudaPathTrace.h"
 #include <common/CudaPortable.hpp>
-#include <common/Vector.hpp>
 #include <common/Ray.hpp>
 #include <common/Material.hpp>
 #include <common/Object.hpp>

@@ -5,7 +5,6 @@
 #ifndef RAYTRACING_BOUNDS3_H
 #define RAYTRACING_BOUNDS3_H
 #include "Ray.hpp"
-#include "Vector.hpp"
 #include "MathUtils.hpp"
 #include <limits>
 #include <array>
@@ -13,25 +12,25 @@
 class Bounds3
 {
 public:
-    Vector3f pMin, pMax; // two points to specify the bounding box
+    glm::vec3 pMin, pMax; // two points to specify the bounding box
     FUNC_QUALIFIER inline Bounds3()
     {
         double minNum = kDoubleNegInfinity;
         double maxNum = kDoubleInfinity;
-        pMax = Vector3f(minNum, minNum, minNum);
-        pMin = Vector3f(maxNum, maxNum, maxNum);
+        pMax = glm::vec3(minNum, minNum, minNum);
+        pMin = glm::vec3(maxNum, maxNum, maxNum);
     }
-    FUNC_QUALIFIER inline Bounds3(const Vector3f p) : pMin(p), pMax(p) {}
-    FUNC_QUALIFIER inline Bounds3(const Vector3f p1, const Vector3f p2)
+    FUNC_QUALIFIER inline Bounds3(const glm::vec3 p) : pMin(p), pMax(p) {}
+    FUNC_QUALIFIER inline Bounds3(const glm::vec3 p1, const glm::vec3 p2)
     {
-        pMin = Vector3f(fmin(p1.x, p2.x), fmin(p1.y, p2.y), fmin(p1.z, p2.z));
-        pMax = Vector3f(fmax(p1.x, p2.x), fmax(p1.y, p2.y), fmax(p1.z, p2.z));
+        pMin = glm::vec3(fmin(p1.x, p2.x), fmin(p1.y, p2.y), fmin(p1.z, p2.z));
+        pMax = glm::vec3(fmax(p1.x, p2.x), fmax(p1.y, p2.y), fmax(p1.z, p2.z));
     }
 
-    FUNC_QUALIFIER inline Vector3f Diagonal() const { return pMax - pMin; }
+    FUNC_QUALIFIER inline glm::vec3 Diagonal() const { return pMax - pMin; }
     FUNC_QUALIFIER inline int maxExtent() const
     {
-        Vector3f d = Diagonal();
+        glm::vec3 d = Diagonal();
         if (d.x > d.y && d.x > d.z)
             return 0;
         else if (d.y > d.z)
@@ -42,22 +41,22 @@ public:
 
     FUNC_QUALIFIER inline double SurfaceArea() const
     {
-        Vector3f d = Diagonal();
+        glm::vec3 d = Diagonal();
         return 2 * (d.x * d.y + d.x * d.z + d.y * d.z);
     }
 
-    FUNC_QUALIFIER inline Vector3f Centroid() { return 0.5 * pMin + 0.5 * pMax; }
+    FUNC_QUALIFIER inline glm::vec3 Centroid() { return pMin * 0.5f + pMax * 0.5f; }
     FUNC_QUALIFIER inline Bounds3 Intersect(const Bounds3& b)
     {
-        return Bounds3(Vector3f(glm::max(pMin.x, b.pMin.x), glm::max(pMin.y, b.pMin.y),
+        return Bounds3(glm::vec3(glm::max(pMin.x, b.pMin.x), glm::max(pMin.y, b.pMin.y),
             glm::max(pMin.z, b.pMin.z)),
-            Vector3f(glm::min(pMax.x, b.pMax.x), glm::min(pMax.y, b.pMax.y),
+            glm::vec3(glm::min(pMax.x, b.pMax.x), glm::min(pMax.y, b.pMax.y),
                 glm::min(pMax.z, b.pMax.z)));
     }
 
-    FUNC_QUALIFIER inline Vector3f Offset(const Vector3f& p) const
+    FUNC_QUALIFIER inline glm::vec3 Offset(const glm::vec3& p) const
     {
-        Vector3f o = p - pMin;
+        glm::vec3 o = p - pMin;
         if (pMax.x > pMin.x)
             o.x /= pMax.x - pMin.x;
         if (pMax.y > pMin.y)
@@ -75,23 +74,23 @@ public:
         return (x && y && z);
     }
 
-    FUNC_QUALIFIER inline bool Inside(const Vector3f& p, const Bounds3& b)
+    FUNC_QUALIFIER inline bool Inside(const glm::vec3& p, const Bounds3& b)
     {
         return (p.x >= b.pMin.x && p.x <= b.pMax.x && p.y >= b.pMin.y &&
             p.y <= b.pMax.y && p.z >= b.pMin.z && p.z <= b.pMax.z);
     }
-    FUNC_QUALIFIER inline const Vector3f& operator[](int i) const
+    FUNC_QUALIFIER inline const glm::vec3& operator[](int i) const
     {
         return (i == 0) ? pMin : pMax;
     }
 
-    FUNC_QUALIFIER inline bool IntersectP(const Ray& ray, const Vector3f& invDir,
+    FUNC_QUALIFIER inline bool IntersectP(const Ray& ray, const glm::vec3& invDir,
         const int* dirisNeg) const;
 };
 
 
 
-FUNC_QUALIFIER inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& invDir,
+FUNC_QUALIFIER inline bool Bounds3::IntersectP(const Ray& ray, const glm::vec3& invDir,
     const int* dirIsNeg) const
 {
     // dirIsNeg[0] = invDir.x < 0;
@@ -121,16 +120,16 @@ FUNC_QUALIFIER inline bool Bounds3::IntersectP(const Ray& ray, const Vector3f& i
 FUNC_QUALIFIER inline Bounds3 Union(const Bounds3& b1, const Bounds3& b2)
 {
     Bounds3 ret;
-    ret.pMin = Vector3f::Min(b1.pMin, b2.pMin);
-    ret.pMax = Vector3f::Max(b1.pMax, b2.pMax);
+    ret.pMin = glm::min(b1.pMin, b2.pMin);
+    ret.pMax = glm::max(b1.pMax, b2.pMax);
     return ret;
 }
 
-FUNC_QUALIFIER inline Bounds3 Union(const Bounds3& b, const Vector3f& p)
+FUNC_QUALIFIER inline Bounds3 Union(const Bounds3& b, const glm::vec3& p)
 {
     Bounds3 ret;
-    ret.pMin = Vector3f::Min(b.pMin, p);
-    ret.pMax = Vector3f::Max(b.pMax, p);
+    ret.pMin = glm::min(b.pMin, p);
+    ret.pMax = glm::max(b.pMax, p);
     return ret;
 }
 

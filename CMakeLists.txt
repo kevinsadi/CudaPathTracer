@@ -9,4 +9,7 @@ include_directories(${PROJECT_SOURCE_DIR}/external)
 
 add_subdirectory(common)
 add_subdirectory(cpu_path_tracer)
-add_subdirectory(gpu_path_tracer)
+
+if (NOT APPLE)
+    add_subdirectory(gpu_path_tracer)
+endif()

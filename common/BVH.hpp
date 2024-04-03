@@ -13,7 +13,6 @@
 #include "Ray.hpp"
 #include "Bounds3.hpp"
 #include "Intersection.hpp"
-#include "Vector.hpp"
 
 struct BVHBuildNode;
 // BVHAccel Forward Declarations

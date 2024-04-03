@@ -10,7 +10,6 @@
 #include "Object.hpp"
 #include "Triangle.hpp"
 #include "Ray.hpp"
-#include "Vector.hpp"
 #include <vector>
 #include <string>
 #include "CudaPortable.hpp"
@@ -20,11 +19,11 @@ public:
     // setting up options
     std::string name = "default";
     // todo: consider using a camera class to to store these options
-    Vector3f camPos = Vector3f(0, 0, 0);
+    glm::vec3 camPos = glm::vec3(0, 0, 0);
     int width = 1280;
     int height = 960;
     double fov = 40;
-    Vector3f backgroundColor = Vector3f(0.235294, 0.67451, 0.843137);
+    glm::vec3 backgroundColor = glm::vec3(0.235294, 0.67451, 0.843137);
     int maxDepth = 1;
     float RussianRoulette = 0.8;
     BVHAccel* bvh = nullptr;
@@ -60,21 +59,21 @@ public:
     // const std::vector<std::unique_ptr<Light>> &get_lights() const { return lights; }
     FUNC_QUALIFIER inline Intersection intersect(const Ray& ray) const;
     void buildBVH();
-    FUNC_QUALIFIER inline Vector3f castRay(const Ray& eyeRay) const;
+    FUNC_QUALIFIER inline glm::vec3 castRay(const Ray& eyeRay) const;
     FUNC_QUALIFIER inline void sampleLight(Intersection& pos, float& pdf) const;
     // FUNC_QUALIFIER inline bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
-    // std::tuple<Vector3f, Vector3f> HandleAreaLight(const AreaLight &light, const Vector3f &hitPoint, const Vector3f &N,
-    //                                                const Vector3f &shadowPointOrig,
+    // std::tuple<glm::vec3, glm::vec3> HandleAreaLight(const AreaLight &light, const glm::vec3 &hitPoint, const glm::vec3 &N,
+    //                                                const glm::vec3 &shadowPointOrig,
     //                                                const std::vector<Object *> &objects, uint32_t &index,
-    //                                                const Vector3f &dir, float specularExponent);
+    //                                                const glm::vec3 &dir, float specularExponent);
 
     // creating the scene (adding objects and lights)
 
     // std::vector<std::unique_ptr<Light>> lights;
 
     // Compute reflection direction
-    FUNC_QUALIFIER inline Vector3f reflect(const Vector3f& I, const Vector3f& N) const {
-        return I - 2 * dotProduct(I, N) * N;
+    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3& I, const glm::vec3& N) const {
+        return I - 2 * glm::dot(I, N) * N;
     }
 
     enum BuiltinScene {
@@ -118,7 +117,7 @@ void Scene::sampleLight(Intersection& pos, float& pdf) const {
 #define kEpsilon 0.0005
 
 // Implementation of Path Tracing
-Vector3f Scene::castRay(const Ray& eyeRay) const {
+glm::vec3 Scene::castRay(const Ray& eyeRay) const {
     glm::vec3 accRadiance(0);
 
     Ray ray = eyeRay;
@@ -126,14 +125,14 @@ Vector3f Scene::castRay(const Ray& eyeRay) const {
 
     // if not hit anything, return background color
     if (!intersec.happened)
-        return fromGlm(accRadiance);
+        return accRadiance;
     // if hit light, return light emission
     if (intersec.m->hasEmission())
         return intersec.m->getEmission();
 
     glm::vec3 throughput(1.0f);
-    glm::vec3 wo = -ray.direction.toGlm();
-    glm::vec3 normal = intersec.normal.toGlm();
+    glm::vec3 wo = -ray.direction;
+    glm::vec3 normal = intersec.normal;
     Material* material = intersec.m;
     auto mateiralType = material->getType();
     for (int depth = 0; depth < this->maxDepth; ++depth)
@@ -142,18 +141,18 @@ Vector3f Scene::castRay(const Ray& eyeRay) const {
 
         if (mateiralType != Dielectric && glm::dot(normal, wo) < 0.f) {
             normal = -normal;
-            intersec.normal = fromGlm(normal);
+            intersec.normal = normal;
         }
 
         if (!deltaBSDF) {
-            glm::vec3 radiance = intersec.emit.toGlm();
+            glm::vec3 radiance = intersec.emit;
             glm::vec3 wi;
             float lightPdf;
             sampleLight(intersec, lightPdf);
 
             if (lightPdf > 0) {
-                float BSDFPdf = material->pdf(fromGlm(wi), fromGlm(wo), fromGlm(normal));
-                accRadiance += throughput * material->eval(fromGlm(wi), fromGlm(wo), fromGlm(normal)).toGlm() *
+                float BSDFPdf = material->pdf(wi, wo, normal);
+                accRadiance += throughput * material->eval(wi, wo, normal) *
                     radiance * Math::satDot(normal, wi) / lightPdf * Math::powerHeuristic(lightPdf, BSDFPdf);
             }
         }
@@ -161,9 +160,9 @@ Vector3f Scene::castRay(const Ray& eyeRay) const {
         // BSDFSample sample;
         // material.sample(intersec.norm, intersec.wo, sample3D(rng), sample);
         glm::vec3 dummy(0.0f); // todo: ???
-        glm::vec3 sampleDir = material->sample(fromGlm(dummy), fromGlm(normal)).normalized().toGlm();
-        glm::vec3 sampleBsdf = material->eval(ray.direction, fromGlm(sampleDir), fromGlm(normal)).toGlm();
-        float samplePdf = material->pdf(ray.direction, fromGlm(sampleDir), fromGlm(normal));
+        glm::vec3 sampleDir = glm::normalize(material->sample(dummy, normal));
+        glm::vec3 sampleBsdf = material->eval(ray.direction, sampleDir, normal);
+        float samplePdf = material->pdf(ray.direction, sampleDir, normal);
         // if (sample.type == BSDFSampleType::Invalid) {
         //     // Terminate path if sampling fails
         //     break;
@@ -177,22 +176,22 @@ Vector3f Scene::castRay(const Ray& eyeRay) const {
         throughput *= sampleBsdf / samplePdf *
             (deltaSample ? 1.f : Math::absDot(normal, sampleDir));
 
-        ray = Ray(intersec.coords, fromGlm(sampleDir), kEpsilon);
+        ray = Ray(intersec.coords, sampleDir, kEpsilon);
 
-        glm::vec3 curPos = intersec.coords.toGlm();
+        glm::vec3 curPos = intersec.coords;
         intersec = Scene::intersect(ray);
         if (!intersec.happened) {
             break;
         }
 
-        wo = -ray.direction.toGlm();
-        normal = intersec.normal.toGlm();
+        wo = -ray.direction;
+        normal = intersec.normal;
         material = intersec.m;
         mateiralType = material->getType();
 
         // hit light
         if (material->hasEmission()) {
-            glm::vec3 radiance = material->getEmission().toGlm();
+            glm::vec3 radiance = material->getEmission();
 
             // float lightPdf = Math::pdfAreaToSolidAngle(
             //     Math::luminance(radiance) * 2.f * glm::pi<float>() * scene->getPrimitiveArea(intersec.primId) * scene->sumLightPowerInv,
@@ -207,5 +206,5 @@ Vector3f Scene::castRay(const Ray& eyeRay) const {
         }
     }
 
-    return fromGlm(accRadiance);
+    return accRadiance;
 }

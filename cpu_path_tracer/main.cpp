@@ -2,7 +2,6 @@
 #include <common/Scene.hpp>
 #include <common/Sphere.hpp>
 #include <common/Triangle.hpp>
-#include <common/Vector.hpp>
 #include <common/Utility.hpp>
 #include <chrono>
 

@@ -3,15 +3,13 @@ set(COMMON_SOURCES
     ${PROJECT_SOURCE_DIR}/common/CudaPortable.hpp
     ${PROJECT_SOURCE_DIR}/common/OBJ_Loader.hpp
     ${PROJECT_SOURCE_DIR}/common/Object.hpp
-    ${PROJECT_SOURCE_DIR}/common/Vector.cpp
-    ${PROJECT_SOURCE_DIR}/common/Vector.hpp
     ${PROJECT_SOURCE_DIR}/common/Sphere.hpp
     ${PROJECT_SOURCE_DIR}/common/Triangle.hpp
     ${PROJECT_SOURCE_DIR}/common/Triangle.cpp
     ${PROJECT_SOURCE_DIR}/common/Scene.cpp
     ${PROJECT_SOURCE_DIR}/common/Scene.hpp
-    ${PROJECT_SOURCE_DIR}/common/Light.hpp
-    ${PROJECT_SOURCE_DIR}/common/AreaLight.hpp
+    # ${PROJECT_SOURCE_DIR}/common/Light.hpp
+    # ${PROJECT_SOURCE_DIR}/common/AreaLight.hpp
     ${PROJECT_SOURCE_DIR}/common/BVH.cpp
     ${PROJECT_SOURCE_DIR}/common/BVH.hpp
     ${PROJECT_SOURCE_DIR}/common/Bounds3.hpp

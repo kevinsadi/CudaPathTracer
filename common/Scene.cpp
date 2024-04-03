@@ -24,7 +24,7 @@ void Scene::buildBVH() {
 //     for (uint32_t k = 0; k < objects.size(); ++k) {
 //         float tNearK = kFloatInfinity;
 //         uint32_t indexK;
-//         Vector2f uvK;
+//         glm::vec2 uvK;
 //         if (objects[k]->intersect(ray, tNearK, indexK) && tNearK < tNear) {
 //             *hitObject = objects[k];
 //             tNear = tNearK;
@@ -42,16 +42,16 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         Scene scene(512, 512);
         scene.name = "Cornell Box";
         scene.maxDepth = maxDepth;
-        scene.camPos = Vector3f(278, 273, -800);
+        scene.camPos = glm::vec3(278, 273, -800);
 
         Material* red = new Material(Lambert);
-        red->m_albedo = Vector3f(0.63f, 0.065f, 0.05f);
+        red->m_albedo = glm::vec3(0.63f, 0.065f, 0.05f);
         Material* green = new Material(Lambert);
-        green->m_albedo = Vector3f(0.14f, 0.45f, 0.091f);
+        green->m_albedo = glm::vec3(0.14f, 0.45f, 0.091f);
         Material* white = new Material(Lambert);
-        white->m_albedo = Vector3f(0.725f, 0.71f, 0.68f);
-        Material* light = new Material(Lambert, (8.0f * Vector3f(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * Vector3f(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * Vector3f(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
-        light->m_albedo = Vector3f(0.65f);
+        white->m_albedo = glm::vec3(0.725f, 0.71f, 0.68f);
+        Material* light = new Material(Lambert, (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
+        light->m_albedo = glm::vec3(0.65f);
         
         scene.AddMaterial(red);
         scene.AddMaterial(green);

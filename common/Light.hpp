@@ -4,13 +4,13 @@
 
 // #pragma once
 
-// #include "Vector.hpp"
+// #include "MathUtils.hpp"
 
 // class Light
 // {
 // public:
-//     Light(const Vector3f &p, const Vector3f &i) : position(p), intensity(i) {}
+//     Light(const glm::vec3 &p, const glm::vec3 &i) : position(p), intensity(i) {}
 //     virtual ~Light() = default;
-//     Vector3f position;
-//     Vector3f intensity;
+//     glm::vec3 position;
+//     glm::vec3 intensity;
 // };

@@ -5,21 +5,20 @@
 // #pragma once
 
 // #include "MathUtils.hpp"
-// #include "Vector.hpp"
 // #include "Light.hpp"
 
 // class AreaLight : public Light
 // {
 // public:
-//     AreaLight(const Vector3f &p, const Vector3f &i) : Light(p, i)
+//     AreaLight(const glm::vec3 &p, const glm::vec3 &i) : Light(p, i)
 //     {
-//         normal = Vector3f(0, -1, 0);
-//         u = Vector3f(1, 0, 0);
-//         v = Vector3f(0, 0, 1);
+//         normal = glm::vec3(0, -1, 0);
+//         u = glm::vec3(1, 0, 0);
+//         v = glm::vec3(0, 0, 1);
 //         length = 100;
 //     }
 
-//     Vector3f SamplePoint() const
+//     glm::vec3 SamplePoint() const
 //     {
 //         auto random_u = get_random_float();
 //         auto random_v = get_random_float();
@@ -27,7 +26,7 @@
 //     }
 
 //     float length;
-//     Vector3f normal;
-//     Vector3f u;
-//     Vector3f v;
+//     glm::vec3 normal;
+//     glm::vec3 u;
+//     glm::vec3 v;
 // };

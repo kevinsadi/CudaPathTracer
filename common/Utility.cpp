@@ -1,7 +1,7 @@
 #include "Utility.hpp"
 #include "MathUtils.hpp"
 
-void Utility::SavePPM(const std::string& path, const std::vector<Vector3f>& frameBuffer, int width, int height)
+void Utility::SavePPM(const std::string& path, const std::vector<glm::vec3>& frameBuffer, int width, int height)
 {
     // save the final render to file
     FILE* fp = fopen(path.c_str(), "wb");

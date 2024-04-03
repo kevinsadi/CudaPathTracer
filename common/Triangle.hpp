@@ -8,30 +8,30 @@
 #include <cassert>
 #include <array>
 
-FUNC_QUALIFIER inline static bool rayTriangleIntersect(const Vector3f& v0, const Vector3f& v1,
-    const Vector3f& v2, const Vector3f& orig,
-    const Vector3f& dir, float& tnear, float& u, float& v)
+FUNC_QUALIFIER inline static bool rayTriangleIntersect(const glm::vec3& v0, const glm::vec3& v1,
+    const glm::vec3& v2, const glm::vec3& orig,
+    const glm::vec3& dir, float& tnear, float& u, float& v)
 {
-    Vector3f edge1 = v1 - v0;
-    Vector3f edge2 = v2 - v0;
-    Vector3f pvec = crossProduct(dir, edge2);
-    float det = dotProduct(edge1, pvec);
+    glm::vec3 edge1 = v1 - v0;
+    glm::vec3 edge2 = v2 - v0;
+    glm::vec3 pvec = glm::cross(dir, edge2);
+    float det = glm::dot(edge1, pvec);
     if (det == 0 || det < 0)
         return false;
 
-    Vector3f tvec = orig - v0;
-    u = dotProduct(tvec, pvec);
+    glm::vec3 tvec = orig - v0;
+    u = glm::dot(tvec, pvec);
     if (u < 0 || u > det)
         return false;
 
-    Vector3f qvec = crossProduct(tvec, edge1);
-    v = dotProduct(dir, qvec);
+    glm::vec3 qvec = glm::cross(tvec, edge1);
+    v = glm::dot(dir, qvec);
     if (v < 0 || u + v > det)
         return false;
 
     float invDet = 1 / det;
 
-    tnear = dotProduct(edge2, qvec) * invDet;
+    tnear = glm::dot(edge2, qvec) * invDet;
     u *= invDet;
     v *= invDet;
 
@@ -41,36 +41,36 @@ FUNC_QUALIFIER inline static bool rayTriangleIntersect(const Vector3f& v0, const
 class Triangle : public Object
 {
 public:
-    Vector3f v0, v1, v2; // vertices A, B ,C , counter-clockwise order
-    Vector3f e1, e2;     // 2 edges v1-v0, v2-v0;
-    Vector3f t0, t1, t2; // texture coords
-    Vector3f normal;
+    glm::vec3 v0, v1, v2; // vertices A, B ,C , counter-clockwise order
+    glm::vec3 e1, e2;     // 2 edges v1-v0, v2-v0;
+    glm::vec3 t0, t1, t2; // texture coords
+    glm::vec3 normal;
     float area = -1;
     Material* material = nullptr;
 
     FUNC_QUALIFIER inline Triangle() {}
-    FUNC_QUALIFIER inline Triangle(Vector3f _v0, Vector3f _v1, Vector3f _v2, Material* _m = nullptr)
+    FUNC_QUALIFIER inline Triangle(glm::vec3 _v0, glm::vec3 _v1, glm::vec3 _v2, Material* _m = nullptr)
         : v0(_v0), v1(_v1), v2(_v2), material(_m)
     {
         e1 = v1 - v0;
         e2 = v2 - v0;
-        normal = normalize(crossProduct(e1, e2));
-        area = crossProduct(e1, e2).norm() * 0.5f;
+        normal = normalize(glm::cross(e1, e2));
+        area = glm::length(glm::cross(e1, e2))* 0.5f;
     }
 
     FUNC_QUALIFIER inline bool intersect(const Ray& ray) override;
     FUNC_QUALIFIER inline bool intersect(const Ray& ray, float& tnear,
         uint32_t& index) const override;
     FUNC_QUALIFIER inline Intersection getIntersection(Ray ray) override;
-    FUNC_QUALIFIER inline void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
-        const uint32_t& index, const Vector2f& uv,
-        Vector3f& N, Vector2f& st) const override
+    FUNC_QUALIFIER inline void getSurfaceProperties(const glm::vec3& P, const glm::vec3& I,
+        const uint32_t& index, const glm::vec2& uv,
+        glm::vec3& N, glm::vec2& st) const override
     {
         N = normal;
         //        throw std::runtime_error("triangle::getSurfaceProperties not
         //        implemented.");
     }
-    FUNC_QUALIFIER inline Vector3f evalDiffuseColor(const Vector2f&) const override;
+    FUNC_QUALIFIER inline glm::vec3 evalDiffuseColor(const glm::vec2&) const override;
     FUNC_QUALIFIER inline Bounds3 getBounds() override;
     // Sample a point on the surface of the object, used for area light
     FUNC_QUALIFIER inline void Sample(Intersection& pos, float& pdf) override {
@@ -101,9 +101,9 @@ public:
     {
         bool intersect = false;
         for (uint32_t k = 0; k < numTriangles; ++k) {
-            const Vector3f& v0 = vertices[vertexIndex[k * 3]];
-            const Vector3f& v1 = vertices[vertexIndex[k * 3 + 1]];
-            const Vector3f& v2 = vertices[vertexIndex[k * 3 + 2]];
+            const glm::vec3& v0 = vertices[vertexIndex[k * 3]];
+            const glm::vec3& v1 = vertices[vertexIndex[k * 3 + 1]];
+            const glm::vec3& v2 = vertices[vertexIndex[k * 3 + 2]];
             float t, u, v;
             if (rayTriangleIntersect(v0, v1, v2, ray.origin, ray.direction, t,
                 u, v) &&
@@ -119,29 +119,29 @@ public:
 
     FUNC_QUALIFIER inline Bounds3 getBounds() override { return bounding_box; }
 
-    FUNC_QUALIFIER inline void getSurfaceProperties(const Vector3f& P, const Vector3f& I,
-        const uint32_t& index, const Vector2f& uv,
-        Vector3f& N, Vector2f& st) const override
+    FUNC_QUALIFIER inline void getSurfaceProperties(const glm::vec3& P, const glm::vec3& I,
+        const uint32_t& index, const glm::vec2& uv,
+        glm::vec3& N, glm::vec2& st) const override
     {
-        const Vector3f& v0 = vertices[vertexIndex[index * 3]];
-        const Vector3f& v1 = vertices[vertexIndex[index * 3 + 1]];
-        const Vector3f& v2 = vertices[vertexIndex[index * 3 + 2]];
-        Vector3f e0 = normalize(v1 - v0);
-        Vector3f e1 = normalize(v2 - v1);
-        N = normalize(crossProduct(e0, e1));
-        const Vector2f& st0 = stCoordinates[vertexIndex[index * 3]];
-        const Vector2f& st1 = stCoordinates[vertexIndex[index * 3 + 1]];
-        const Vector2f& st2 = stCoordinates[vertexIndex[index * 3 + 2]];
+        const glm::vec3& v0 = vertices[vertexIndex[index * 3]];
+        const glm::vec3& v1 = vertices[vertexIndex[index * 3 + 1]];
+        const glm::vec3& v2 = vertices[vertexIndex[index * 3 + 2]];
+        glm::vec3 e0 = normalize(v1 - v0);
+        glm::vec3 e1 = normalize(v2 - v1);
+        N = normalize(glm::cross(e0, e1));
+        const glm::vec2& st0 = stCoordinates[vertexIndex[index * 3]];
+        const glm::vec2& st1 = stCoordinates[vertexIndex[index * 3 + 1]];
+        const glm::vec2& st2 = stCoordinates[vertexIndex[index * 3 + 2]];
         st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
     }
 
-    FUNC_QUALIFIER inline Vector3f evalDiffuseColor(const Vector2f& st) const override
+    FUNC_QUALIFIER inline glm::vec3 evalDiffuseColor(const glm::vec2& st) const override
     {
         float scale = 5;
         float pattern =
             (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
-        return lerp(Vector3f(0.815, 0.235, 0.031),
-            Vector3f(0.937, 0.937, 0.231), pattern);
+        return glm::mix(glm::vec3(0.815, 0.235, 0.031),
+            glm::vec3(0.937, 0.937, 0.231), pattern);
     }
 
     FUNC_QUALIFIER inline Intersection getIntersection(Ray ray) override
@@ -169,9 +169,9 @@ public:
     Bounds3 bounding_box;
     // todo: we have both triangle soup and indexed mesh, should keep only one
     int num_vertices = 0;
-    Vector3f* vertices = nullptr;
+    glm::vec3* vertices = nullptr;
     uint32_t numTriangles;
-    Vector2f* stCoordinates = nullptr; // uv1
+    glm::vec2* stCoordinates = nullptr; // uv1
     // todo: vertex normal?
     int num_triangles = 0;
     uint32_t* vertexIndex = nullptr;
@@ -198,24 +198,24 @@ FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
 {
     Intersection inter;
 
-    if (dotProduct(ray.direction, normal) > 0)
+    if (glm::dot(ray.direction, normal) > 0)
         return inter;
     double u, v, t_tmp = 0;
-    Vector3f pvec = crossProduct(ray.direction, e2);
-    double det = dotProduct(e1, pvec);
+    glm::vec3 pvec = glm::cross(ray.direction, e2);
+    double det = glm::dot(e1, pvec);
     if (fabs(det) < Epsilon)
         return inter;
 
     double det_inv = 1. / det;
-    Vector3f tvec = ray.origin - v0;
-    u = dotProduct(tvec, pvec) * det_inv;
+    glm::vec3 tvec = ray.origin - v0;
+    u = glm::dot(tvec, pvec) * det_inv;
     if (u < 0 || u > 1)
         return inter;
-    Vector3f qvec = crossProduct(tvec, e1);
-    v = dotProduct(ray.direction, qvec) * det_inv;
+    glm::vec3 qvec = glm::cross(tvec, e1);
+    v = glm::dot(ray.direction, qvec) * det_inv;
     if (v < 0 || u + v > 1)
         return inter;
-    t_tmp = dotProduct(e2, qvec) * det_inv;
+    t_tmp = glm::dot(e2, qvec) * det_inv;
 
     if (t_tmp < 0)
         return inter;
@@ -230,7 +230,7 @@ FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
     return inter;
 }
 
-FUNC_QUALIFIER inline Vector3f Triangle::evalDiffuseColor(const Vector2f&) const
+FUNC_QUALIFIER inline glm::vec3 Triangle::evalDiffuseColor(const glm::vec2&) const
 {
-    return Vector3f(0.5, 0.5, 0.5);
+    return glm::vec3(0.5, 0.5, 0.5);
 }
