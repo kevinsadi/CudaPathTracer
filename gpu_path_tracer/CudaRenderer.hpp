@@ -8,8 +8,7 @@
 class CudaRenderer : public Renderer {
 private:
     Scene* scene_gpu = nullptr;
-    thrust::device_ptr<Vector3f> framebuffer_gpu;
-    curandState* rng_gpu = nullptr;
+    thrust::device_ptr<glm::vec3> framebuffer_gpu;
     int num_blocks = 0;
     int num_pixels = 0;
 public:

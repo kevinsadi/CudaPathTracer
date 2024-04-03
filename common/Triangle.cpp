@@ -46,7 +46,10 @@ MeshTriangle::MeshTriangle(const std::string& filename, Material& mt) {
                 mesh.Vertices[i + j].TextureCoordinate.Y);
         }
 
-        triangles[triangle_index++] = Triangle(face_vertices[0], face_vertices[1], face_vertices[2], mt);
+        // stored triangle soup
+        triangles[triangle_index] = Triangle(face_vertices[0], face_vertices[1], face_vertices[2], mt);
+        area += triangles[triangle_index].area;
+        ++triangle_index;
     }
     for (int i = 0; i < mesh.Indices.size(); i += 3) {
         vertexIndex[i] = mesh.Indices[i];
@@ -55,20 +58,10 @@ MeshTriangle::MeshTriangle(const std::string& filename, Material& mt) {
     }
 
     bounding_box = Bounds3(min_vert, max_vert);
-
-    // stored triangle soup
-    std::vector<Object*> triangle_ptrs; // temporary storage for BVH construction
-    for (int i = 0; i < num_triangles; ++i) {
-        triangle_ptrs.push_back(&triangles[i]);
-        area += triangles[i].area;
-    }
-
-    bvh = new BVHAccel(triangle_ptrs);
 }
 
 MeshTriangle::~MeshTriangle() {
     if (vertices) delete[] vertices;
     if (vertexIndex) delete[] vertexIndex;
     if (stCoordinates) delete[] stCoordinates;
-    if (bvh) delete bvh;
 }

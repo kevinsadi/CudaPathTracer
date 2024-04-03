@@ -6,12 +6,13 @@
 
 #include "BVH.hpp"
 #include "CudaPortable.hpp"
-#include "Object.hpp"
+// #include "Object.hpp"
 #include "Ray.hpp"
 #include "Settings.hpp"
 #include "Triangle.hpp"
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 class Scene {
 public:
@@ -25,41 +26,31 @@ public:
     glm::vec3 backgroundColor = glm::vec3(0.235294, 0.67451, 0.843137);
     int maxDepth = 1;
     float RussianRoulette = 0.8;
-    BVHAccel *bvh = nullptr;
-    // [!] as polymorphic is not supported in CUDA, currently we only allow
-    // MeshTriangle std::vector<Object *> objects;
-    std::vector<MeshTriangle *> meshes; // [!] for build scene stage only, dont use it in rendering
-    MeshTriangle **meshes_data = nullptr;
+    BVHAccel* bvh = nullptr;
+    // -----------Editor Only-----------
+    // [!] as polymorphic is not supported in CUDA, currently we only allow MeshTriangle
+    std::vector<MeshTriangle*> meshes;
+    std::unordered_map<MeshTriangle*, BVHAccel*> meshBvhMap;
+    // ---------------------------------
+    MeshTriangle** meshes_data = nullptr;
+    BVHAccel** mesh_bvhs = nullptr;
     int num_meshes = 0;
-    std::vector<Material> materials;
-    Material *materials_data = nullptr;
-    int num_materials = 0;
 
     Scene(int w, int h) : width(w), height(h) {}
 
-    void Add(Object *object) {
-        if (typeid(*object) != typeid(MeshTriangle)) {
-            throw std::runtime_error("only support MeshTriangle");
-        }
-        // objects.push_back(object);
-        meshes.push_back((MeshTriangle *)object);
+    void Add(MeshTriangle* mesh) {
+        meshes.push_back((MeshTriangle*)mesh);
         num_meshes = meshes.size();
         meshes_data = meshes.data();
-    }
-
-    void AddMaterial(Material material) {
-        materials.push_back(material);
-        materials_data = materials.data();
-        num_materials = materials.size();
     }
 
     // const std::vector<Object *> &get_objects() const { return objects; }
     // const std::vector<std::unique_ptr<Light>> &get_lights() const { return
     // lights; }
-    FUNC_QUALIFIER inline Intersection intersect(const Ray &ray) const;
+    FUNC_QUALIFIER inline Intersection intersect(const Ray& ray) const;
     void buildBVH();
-    FUNC_QUALIFIER inline glm::vec3 castRay(const Ray &eyeRay) const;
-    FUNC_QUALIFIER inline void sampleLight(Intersection &pos, float &pdf) const;
+    FUNC_QUALIFIER inline glm::vec3 castRay(RNG& rng, const Ray& eyeRay) const;
+    FUNC_QUALIFIER inline void sampleLight(RNG& rng, Intersection& pos, float& pdf) const;
     FUNC_QUALIFIER inline float lightAreaSum() const;
     // FUNC_QUALIFIER inline bool trace(const Ray& ray, const
     // std::vector<Object*>& objects, float& tNear, uint32_t& index, Object**
@@ -77,8 +68,8 @@ public:
     // std::vector<std::unique_ptr<Light>> lights;
 
     // Compute reflection direction
-    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3 &I,
-                                            const glm::vec3 &N) const {
+    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3& I,
+        const glm::vec3& N) const {
         return I - 2 * glm::dot(I, N) * N;
     }
 
@@ -90,22 +81,24 @@ public:
     CUDA_PORTABLE(Scene);
 };
 
-Intersection Scene::intersect(const Ray &ray) const {
+Intersection Scene::intersect(const Ray& ray) const {
     return this->bvh->Intersect(ray);
 }
 
-void Scene::sampleLight(Intersection &pos, float &pdf) const {
+void Scene::sampleLight(RNG& rng, Intersection& pos, float& pdf) const {
     float emit_area_sum = lightAreaSum();
-    float p = get_random_float() * emit_area_sum;
+    float p = rng.sample1D() * emit_area_sum;
     emit_area_sum = 0;
     // for (uint32_t k = 0; k < objects.size(); ++k) {
     //     auto object = objects[k];
     for (uint32_t k = 0; k < num_meshes; ++k) {
-        auto object = meshes_data[k];
-        if (object->material.type == Material::Type::Light) {
-            emit_area_sum += object->getArea();
+        auto mesh = meshes_data[k];
+        auto meshBvh = mesh_bvhs[k];
+        if (mesh->material.type == Material::Type::Light) {
+            emit_area_sum += mesh->area;
             if (p <= emit_area_sum) {
-                object->Sample(pos, pdf);
+                meshBvh->Sample(rng, pos, pdf);
+                pos.emit = mesh->material.baseColor;
                 break;
             }
         }
@@ -117,15 +110,15 @@ float Scene::lightAreaSum() const {
     // for (uint32_t k = 0; k < objects.size(); ++k) {
     //     auto object = objects[k];
     for (uint32_t k = 0; k < num_meshes; ++k) {
-        auto object = meshes_data[k];
-        if (object->material.type == Material::Type::Light) {
-            emit_area_sum += object->getArea();
+        auto mesh = meshes_data[k];
+        if (mesh->material.type == Material::Type::Light) {
+            emit_area_sum += mesh->area;
         }
     }
     return emit_area_sum;
 }
 
-glm::vec3 Scene::castRay(const Ray &eyeRay) const {
+glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
     glm::vec3 accRadiance(0.f), throughput(1.f);
 
     Ray ray = eyeRay;
@@ -148,7 +141,7 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
             // direct lighting
             Intersection lightSample;
             float lightPdf;
-            sampleLight(lightSample, lightPdf);
+            sampleLight(rng, lightSample, lightPdf);
             glm::vec3 p = intersec.coords;
             glm::vec3 x = lightSample.coords;
             glm::vec3 wo = -ray.direction;
@@ -167,7 +160,7 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
 
         // indirect lighting 
         BSDFSample sample;
-        material.sample(intersec.normal, -ray.direction, Math::sample3D(), sample);
+        material.sample(intersec.normal, -ray.direction, rng.sample3D(), sample);
         glm::vec3 p = intersec.coords;
         glm::vec3 wo = -ray.direction;
         glm::vec3 wi = sample.dir;
@@ -178,7 +171,8 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
         if (sample.type == BSDFSampleType::Invalid) {
             // Terminate path if sampling fails
             break;
-        } else if (sample.pdf < Epsilon8) {
+        }
+        else if (sample.pdf < Epsilon8) {
             break;
         }
 
@@ -196,7 +190,7 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
         }
         // if it is light again
         if (material.type == Material::Type::Light) {
-            float lightPdf = Math::pdfAreaToSolidAngle(intersec.obj->getArea() / Scene::lightAreaSum(), p, intersec.coords, intersec.normal);
+            float lightPdf = Math::pdfAreaToSolidAngle(intersec.triangleArea / Scene::lightAreaSum(), p, intersec.coords, intersec.normal);
             float weight = deltaSample ? 1.f : Math::powerHeuristic(indirectPdf, lightPdf);
             accRadiance += throughput * intersec.emit * weight;
             break;

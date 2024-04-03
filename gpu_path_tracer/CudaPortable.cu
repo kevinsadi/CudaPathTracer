@@ -2,9 +2,7 @@
 #include <common/CudaPortable.hpp>
 #include <common/Ray.hpp>
 #include <common/Material.hpp>
-#include <common/Object.hpp>
 #include <common/Triangle.hpp>
-// #include <common/Sphere.hpp>
 #include <common/Scene.hpp>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -105,30 +103,90 @@ void FreeAndUnregister(const T* host)
 #define CUDA_AUTO_ALLOCATION(CLASS_NAME) 
 #endif
 // if class/struct is pure data type without pointer, then it is safe to use this macro
-CUDA_AUTO_ALLOCATION(Vector3f);
-CUDA_AUTO_ALLOCATION(Vector2f);
 CUDA_AUTO_ALLOCATION(Material);
+CUDA_AUTO_ALLOCATION(Triangle);
 // otherwise, we need to manually implement the MallocCuda and FreeCuda function
+
+static std::unordered_map<const BVHBuildNode*, BVHBuildNode*> bvhMap; // key: host bvh node, value: device bvh node(not copied to device yet)
+void ClearBVHMap()
+{
+    if (!bvhMap.empty())
+    {
+        for (auto& pair : bvhMap)
+        {
+            pair.second->left = nullptr;
+            pair.second->right = nullptr;
+            pair.second->meshBvhRoot = nullptr;
+            delete pair.second;
+        }
+    }
+    bvhMap.clear();
+}
+void UploadBVHToGPU()
+{
+    for (auto& pair : bvhMap)
+    {
+        BVHBuildNode* host_ptr = const_cast<BVHBuildNode*>(pair.first);
+        BVHBuildNode* host_temp_ptr = pair.second;
+        BVHBuildNode* device_ptr = (BVHBuildNode*)GetDeviceMemory((void*)host_ptr);
+
+        // set nextIfHit and nextIfMiss
+        if (host_ptr->nextIfHit)
+        {
+            host_temp_ptr->nextIfHit = (BVHBuildNode*)GetDeviceMemory((void*)host_ptr->nextIfHit);
+        }
+        else
+        {
+            host_temp_ptr->nextIfHit = nullptr;
+        }
+        if (host_ptr->nextIfMiss)
+        {
+            host_temp_ptr->nextIfMiss = (BVHBuildNode*)GetDeviceMemory((void*)host_ptr->nextIfMiss);
+        }
+        else
+        {
+            host_temp_ptr->nextIfMiss = nullptr;
+        }
+
+        // copy host_temp to device
+        cudaMemcpy(device_ptr, host_temp_ptr, sizeof(BVHBuildNode), cudaMemcpyHostToDevice);
+    }
+}
+// no need to unload, as the device memory is freed when the scene is freed
 
 void BVHBuildNode::MallocCuda(BVHBuildNode*& device_ptr) const
 {
     AllocateAndRegisterIfNullptr(this, device_ptr, 1);
-    BVHBuildNode temp = *this;
-    if (this->left != nullptr)
+    BVHBuildNode* temp = new BVHBuildNode();
+    *temp = *this;
+    // add to bvhMap
+    if (bvhMap.find(this) == bvhMap.end())
     {
-        temp.left = nullptr;
-        this->left->MallocCuda(temp.left);
+        bvhMap[this] = temp;
     }
-    if (this->right != nullptr)
+    else
     {
-        temp.right = nullptr;
-        this->right->MallocCuda(temp.right);
+        throw std::runtime_error("Object already exists in bvhMap: object being allocated is already uploaded to device memory");
     }
-    if (this->object != nullptr)
+
+    if (this->mesh)
     {
-        temp.object = (Object*)GetDeviceMemory((void*)this->object);
+        temp->mesh = (MeshTriangle*)GetDeviceMemory((void*)this->mesh);
+        temp->meshBvhRoot = nullptr;
+        this->meshBvhRoot->MallocCuda(temp->meshBvhRoot);
     }
-    cudaMemcpy(device_ptr, &temp, sizeof(BVHBuildNode), cudaMemcpyHostToDevice);
+    else if (this->triangle)
+    {
+        temp->triangle = (Triangle*)GetDeviceMemory((void*)this->triangle);
+    }
+    else
+    {
+        assert (this->left != nullptr && this->right != nullptr);
+        temp->left = nullptr;
+        this->left->MallocCuda(temp->left);
+        temp->right = nullptr;
+        this->right->MallocCuda(temp->right);
+    }
 }
 void BVHBuildNode::FreeCuda() const
 {
@@ -139,6 +197,10 @@ void BVHBuildNode::FreeCuda() const
     if (this->right != nullptr)
     {
         this->right->FreeCuda();
+    }
+    if (this->meshBvhRoot != nullptr)
+    {
+        this->meshBvhRoot->FreeCuda();
     }
     FreeAndUnregister(this);
 }
@@ -172,38 +234,6 @@ void BVHAccel::FreeCuda() const
     FreeAndUnregister(this);
 }
 
-// void Sphere::MallocCuda(Sphere*& device_ptr) const
-// {
-//     AllocateAndRegisterIfNullptr(this, device_ptr, 1);
-//     Sphere temp = *this;
-//     if (this->material != nullptr)
-//     {
-//         // not duplicate the material but point to the device memory of the material
-//         temp.material = (Material*)GetDeviceMemory(this->material);
-//     }
-//     cudaMemcpy(device_ptr, &temp, sizeof(Sphere), cudaMemcpyHostToDevice);
-// }
-// void Sphere::FreeCuda() const
-// {
-//     FreeAndUnregister(this);
-// }
-
-void Triangle::MallocCuda(Triangle*& device_ptr) const
-{
-    AllocateAndRegisterIfNullptr(this, device_ptr, 1);
-    Triangle temp = *this;
-    if (temp.material != nullptr)
-    {
-        // not duplicate the material but point to the device memory of the material
-        temp.material = (Material*)GetDeviceMemory(temp.material);
-    }
-    cudaMemcpy(device_ptr, &temp, sizeof(Triangle), cudaMemcpyHostToDevice);
-}
-void Triangle::FreeCuda() const
-{
-    FreeAndUnregister(this);
-}
-
 void MeshTriangle::MallocCuda(MeshTriangle*& device_ptr) const
 {
     AllocateAndRegisterIfNullptr(this, device_ptr, 1);
@@ -212,17 +242,12 @@ void MeshTriangle::MallocCuda(MeshTriangle*& device_ptr) const
     assert(this->stCoordinates != nullptr);
     assert(this->vertexIndex != nullptr);
     assert(this->triangles != nullptr);
-    assert(this->material != nullptr);
-    assert(this->bvh != nullptr);
-    // 1. index device material
-    // not duplicate the material but point to the device memory of the material
-    temp.material = (Material*)GetDeviceMemory(temp.material);
     // 2. upload indexed mesh data to device
     AllocateAndRegister(this->vertices, temp.vertices, temp.num_vertices);
     AllocateAndRegister(this->stCoordinates, temp.stCoordinates, temp.num_vertices);
     AllocateAndRegister(this->vertexIndex, temp.vertexIndex, temp.num_triangles * 3);
-    cudaMemcpy(temp.vertices, this->vertices, sizeof(Vector3f) * temp.num_vertices, cudaMemcpyHostToDevice);
-    cudaMemcpy(temp.stCoordinates, this->stCoordinates, sizeof(Vector2f) * temp.num_vertices, cudaMemcpyHostToDevice);
+    cudaMemcpy(temp.vertices, this->vertices, sizeof(glm::vec3) * temp.num_vertices, cudaMemcpyHostToDevice);
+    cudaMemcpy(temp.stCoordinates, this->stCoordinates, sizeof(glm::vec2) * temp.num_vertices, cudaMemcpyHostToDevice);
     cudaMemcpy(temp.vertexIndex, this->vertexIndex, sizeof(uint32_t) * temp.num_triangles * 3, cudaMemcpyHostToDevice);
     // 3. upload triangle soup to device
     AllocateAndRegister(this->triangles, temp.triangles, temp.num_triangles);
@@ -233,15 +258,12 @@ void MeshTriangle::MallocCuda(MeshTriangle*& device_ptr) const
         Triangle* triangle_ptr = temp.triangles + i;
         this->triangles[i].MallocCuda(triangle_ptr);
     }
-    // 4. allocate bvh
-    temp.bvh = nullptr;
-    this->bvh->MallocCuda(temp.bvh);
 
     cudaMemcpy(device_ptr, &temp, sizeof(MeshTriangle), cudaMemcpyHostToDevice);
     temp.vertices = nullptr;
     temp.stCoordinates = nullptr;
     temp.vertexIndex = nullptr;
-    temp.bvh = nullptr;
+    // temp.bvh = nullptr;
 }
 void MeshTriangle::FreeCuda() const
 {
@@ -254,29 +276,19 @@ void MeshTriangle::FreeCuda() const
     {
         this->triangles[i].FreeCuda();
     }
-    // FreeAndUnregister(this->triangles);
-    // 3. free bvh
-    this->bvh->FreeCuda();
 
     FreeAndUnregister(this);
 }
 
 void Scene::MallocCuda(Scene*& device_ptr) const
 {
+    // 0. clear bvh map
+    ClearBVHMap();
+
     AllocateAndRegisterIfNullptr(this, device_ptr, 1);
     Scene temp = *this;
     assert(this->meshes_data != nullptr);
     assert(this->bvh != nullptr);
-    // 1. upload material
-    AllocateAndRegister(this->materials_data, temp.materials_data, this->num_materials);
-    Material** temp_materials = new Material * [this->num_materials];
-    for (int i = 0; i < this->num_materials; i++)
-    {
-        temp_materials[i] = nullptr;
-        this->materials_data[i]->MallocCuda(temp_materials[i]);
-    }
-    cudaMemcpy(temp.materials_data, temp_materials, sizeof(Material*) * this->num_materials, cudaMemcpyHostToDevice);
-    delete[] temp_materials;
     // 2. upload meshes
     AllocateAndRegister(this->meshes_data, temp.meshes_data, this->num_meshes);
     MeshTriangle** temp_meshes = new MeshTriangle * [this->num_meshes];
@@ -287,28 +299,34 @@ void Scene::MallocCuda(Scene*& device_ptr) const
     }
     cudaMemcpy(temp.meshes_data, temp_meshes, sizeof(MeshTriangle*) * this->num_meshes, cudaMemcpyHostToDevice);
     delete[] temp_meshes;
-    // 3. upload bvh
+    // 3. create scene bvh
     temp.bvh = nullptr;
     this->bvh->MallocCuda(temp.bvh);
+    AllocateAndRegister(this->mesh_bvhs, temp.mesh_bvhs, this->num_meshes);
+    BVHAccel** temp_mesh_bvhs = new BVHAccel * [this->num_meshes];
+    for (int i = 0; i < this->num_meshes; i++)
+    {
+        temp_mesh_bvhs[i] = (BVHAccel*)GetDeviceMemory((void*)this->mesh_bvhs[i]);
+    }
+    cudaMemcpy(temp.mesh_bvhs, temp_mesh_bvhs, sizeof(BVHAccel*) * this->num_meshes, cudaMemcpyHostToDevice);
+    delete[] temp_mesh_bvhs;
+    // 4. upload all bvh
+    UploadBVHToGPU();
+    ClearBVHMap();
 
     cudaMemcpy(device_ptr, &temp, sizeof(Scene), cudaMemcpyHostToDevice);
 }
 void Scene::FreeCuda() const
 {
-    // 1. free bvh
-    this->bvh->FreeCuda();
-    // 2. free material
-    for (int i = 0; i < this->num_materials; i++)
-    {
-        this->materials_data[i]->FreeCuda();
-    }
-    FreeAndUnregister(this->materials_data);
-    // 3. free meshes
+    // 2. free meshes
     for (int i = 0; i < this->num_meshes; i++)
     {
         this->meshes_data[i]->FreeCuda();
     }
     FreeAndUnregister(this->meshes_data);
+    // 3. free bvh
+    this->bvh->FreeCuda();
+    FreeAndUnregister(this->mesh_bvhs);
 
     FreeAndUnregister(this);
 }

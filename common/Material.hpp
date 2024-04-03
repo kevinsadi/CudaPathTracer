@@ -5,6 +5,7 @@
 #include <glm/gtx/intersect.hpp>
 
 #include "MathUtils.hpp"
+#include "CudaPortable.hpp"
 
 #define MATERIAL_DIELECTRIC_USE_SCHLICK_APPROX false
 
@@ -265,4 +266,6 @@ struct Material {
     int metallicMapId = NullTextureId;
     int roughnessMapId = NullTextureId;
     int normalMapId = NullTextureId;
+
+    CUDA_PORTABLE(Material);
 };

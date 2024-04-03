@@ -1,10 +1,11 @@
 #pragma once
 
-#include "BVH.hpp"
+// #include "BVH.hpp"
 #include "Intersection.hpp"
 #include "Material.hpp"
 #include "Object.hpp"
 #include "MathUtils.hpp"
+#include "Ray.hpp"
 #include <cassert>
 #include <array>
 
@@ -45,7 +46,6 @@ public:
     glm::vec3 e1, e2;     // 2 edges v1-v0, v2-v0;
     glm::vec3 t0, t1, t2; // texture coords
     glm::vec3 normal;
-    float area = -1;
     Material material;
 
     FUNC_QUALIFIER inline Triangle() {}
@@ -55,32 +55,28 @@ public:
         e1 = v1 - v0;
         e2 = v2 - v0;
         normal = normalize(glm::cross(e1, e2));
-        area = glm::length(glm::cross(e1, e2))* 0.5f;
+        area = glm::length(glm::cross(e1, e2)) * 0.5f;
     }
 
-    FUNC_QUALIFIER inline bool intersect(const Ray& ray) override;
     FUNC_QUALIFIER inline bool intersect(const Ray& ray, float& tnear,
         uint32_t& index) const override;
-    FUNC_QUALIFIER inline Intersection getIntersection(Ray ray) override;
-    FUNC_QUALIFIER inline void getSurfaceProperties(const glm::vec3& P, const glm::vec3& I,
-        const uint32_t& index, const glm::vec2& uv,
-        glm::vec3& N, glm::vec2& st) const override
-    {
-        N = normal;
-        //        throw std::runtime_error("triangle::getSurfaceProperties not
-        //        implemented.");
-    }
-    FUNC_QUALIFIER inline glm::vec3 evalDiffuseColor(const glm::vec2&) const override;
+    FUNC_QUALIFIER inline Intersection getIntersection(Ray ray);
+    // FUNC_QUALIFIER inline void getSurfaceProperties(const glm::vec3& P, const glm::vec3& I,
+    //     const uint32_t& index, const glm::vec2& uv,
+    //     glm::vec3& N, glm::vec2& st) const override
+    // {
+    //     N = normal;
+    //     //        throw std::runtime_error("triangle::getSurfaceProperties not
+    //     //        implemented.");
+    // }
+    // FUNC_QUALIFIER inline glm::vec3 evalDiffuseColor(const glm::vec2&) const override;
     FUNC_QUALIFIER inline Bounds3 getBounds() override;
     // Sample a point on the surface of the object, used for area light
-    FUNC_QUALIFIER inline void Sample(Intersection& pos, float& pdf) override {
-        float x = glm::sqrt(get_random_float()), y = get_random_float();
+    FUNC_QUALIFIER inline void Sample(RNG& rng, Intersection& pos, float& pdf) {
+        float x = glm::sqrt(rng.sample1D()), y = rng.sample1D();
         pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
         pos.normal = this->normal;
         pdf = 1.0f / area;
-    }
-    FUNC_QUALIFIER inline float getArea() override {
-        return area;
     }
 
     CUDA_PORTABLE(Triangle);
@@ -92,12 +88,11 @@ public:
     MeshTriangle(const std::string& filename, Material& mt);
     ~MeshTriangle();
 
-    FUNC_QUALIFIER inline bool intersect(const Ray& ray) override { return true; }
 
     FUNC_QUALIFIER inline bool intersect(const Ray& ray, float& tnear, uint32_t& index) const override
     {
         bool intersect = false;
-        for (uint32_t k = 0; k < numTriangles; ++k) {
+        for (uint32_t k = 0; k < num_triangles; ++k) {
             const glm::vec3& v0 = vertices[vertexIndex[k * 3]];
             const glm::vec3& v1 = vertices[vertexIndex[k * 3 + 1]];
             const glm::vec3& v2 = vertices[vertexIndex[k * 3 + 2]];
@@ -116,70 +111,46 @@ public:
 
     FUNC_QUALIFIER inline Bounds3 getBounds() override { return bounding_box; }
 
-    FUNC_QUALIFIER inline void getSurfaceProperties(const glm::vec3& P, const glm::vec3& I,
-        const uint32_t& index, const glm::vec2& uv,
-        glm::vec3& N, glm::vec2& st) const override
-    {
-        const glm::vec3& v0 = vertices[vertexIndex[index * 3]];
-        const glm::vec3& v1 = vertices[vertexIndex[index * 3 + 1]];
-        const glm::vec3& v2 = vertices[vertexIndex[index * 3 + 2]];
-        glm::vec3 e0 = normalize(v1 - v0);
-        glm::vec3 e1 = normalize(v2 - v1);
-        N = normalize(glm::cross(e0, e1));
-        const glm::vec2& st0 = stCoordinates[vertexIndex[index * 3]];
-        const glm::vec2& st1 = stCoordinates[vertexIndex[index * 3 + 1]];
-        const glm::vec2& st2 = stCoordinates[vertexIndex[index * 3 + 2]];
-        st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
-    }
+    // FUNC_QUALIFIER inline void getSurfaceProperties(const glm::vec3& P, const glm::vec3& I,
+    //     const uint32_t& index, const glm::vec2& uv,
+    //     glm::vec3& N, glm::vec2& st) const override
+    // {
+    //     const glm::vec3& v0 = vertices[vertexIndex[index * 3]];
+    //     const glm::vec3& v1 = vertices[vertexIndex[index * 3 + 1]];
+    //     const glm::vec3& v2 = vertices[vertexIndex[index * 3 + 2]];
+    //     glm::vec3 e0 = normalize(v1 - v0);
+    //     glm::vec3 e1 = normalize(v2 - v1);
+    //     N = normalize(glm::cross(e0, e1));
+    //     const glm::vec2& st0 = stCoordinates[vertexIndex[index * 3]];
+    //     const glm::vec2& st1 = stCoordinates[vertexIndex[index * 3 + 1]];
+    //     const glm::vec2& st2 = stCoordinates[vertexIndex[index * 3 + 2]];
+    //     st = st0 * (1 - uv.x - uv.y) + st1 * uv.x + st2 * uv.y;
+    // }
 
-    FUNC_QUALIFIER inline glm::vec3 evalDiffuseColor(const glm::vec2& st) const override
-    {
-        float scale = 5;
-        float pattern =
-            (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
-        return glm::mix(glm::vec3(0.815, 0.235, 0.031),
-            glm::vec3(0.937, 0.937, 0.231), pattern);
-    }
-
-    FUNC_QUALIFIER inline Intersection getIntersection(Ray ray) override
-    {
-        Intersection intersec;
-
-        if (bvh) {
-            intersec = bvh->Intersect(ray);
-        }
-
-        return intersec;
-    }
-    // Sample a point on the surface of the object, used for area light
-    FUNC_QUALIFIER inline void Sample(Intersection& pos, float& pdf) override {
-        bvh->Sample(pos, pdf);
-        pos.emit = material.baseColor;
-    }
-    FUNC_QUALIFIER inline float getArea() override {
-        return area;
-    }
+    // FUNC_QUALIFIER inline glm::vec3 evalDiffuseColor(const glm::vec2& st) const override
+    // {
+    //     float scale = 5;
+    //     float pattern =
+    //         (fmodf(st.x * scale, 1) > 0.5) ^ (fmodf(st.y * scale, 1) > 0.5);
+    //     return glm::mix(glm::vec3(0.815, 0.235, 0.031),
+    //         glm::vec3(0.937, 0.937, 0.231), pattern);
+    // }
 
     Bounds3 bounding_box;
     // todo: we have both triangle soup and indexed mesh, should keep only one
     int num_vertices = 0;
     glm::vec3* vertices = nullptr;
-    uint32_t numTriangles;
     glm::vec2* stCoordinates = nullptr; // uv1
     // todo: vertex normal?
     int num_triangles = 0;
     uint32_t* vertexIndex = nullptr;
     Triangle* triangles = nullptr; // triangle soup
 
-    BVHAccel* bvh;
-    float area;
-
     Material material;
 
     CUDA_PORTABLE(MeshTriangle);
 };
 
-FUNC_QUALIFIER inline bool Triangle::intersect(const Ray& ray) { return true; }
 FUNC_QUALIFIER inline bool Triangle::intersect(const Ray& ray, float& tnear,
     uint32_t& index) const
 {
@@ -218,13 +189,13 @@ FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
     inter.coords = ray(t_tmp);
     inter.normal = normal;
     inter.distance = t_tmp;
-    inter.obj = this;
+    inter.triangleArea = area;
     inter.m = this->material;
 
     return inter;
 }
 
-FUNC_QUALIFIER inline glm::vec3 Triangle::evalDiffuseColor(const glm::vec2&) const
-{
-    return glm::vec3(0.5, 0.5, 0.5);
-}
+// FUNC_QUALIFIER inline glm::vec3 Triangle::evalDiffuseColor(const glm::vec2&) const
+// {
+//     return glm::vec3(0.5, 0.5, 0.5);
+// }

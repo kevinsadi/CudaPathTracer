@@ -4,11 +4,65 @@
 #include <sstream>
 #include <vector>
 #include <cmath>
-#include <random>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 #include "CudaPortable.hpp"
+
+#ifdef GPU_PATH_TRACER
+#include <thrust/random.h>
+using Sampler = thrust::default_random_engine;
+using Distribution = thrust::uniform_real_distribution<float>;
+#else
+#include <random>
+using Sampler = std::mt19937;
+using Distribution = std::uniform_real_distribution<float>;
+#endif
+
+struct RNG
+{
+    Sampler sampler;
+    FUNC_QUALIFIER inline RNG(int iter, int index, int dim, uint32_t* data)
+    {
+        int h = utilhash((1 << 31) | (dim << 22) | iter) ^ utilhash(index);
+        sampler = Sampler(h);
+    }
+
+    FUNC_QUALIFIER inline float get_random_float() {
+        return Distribution(0.f, 1.f)(sampler);
+    }
+
+    FUNC_QUALIFIER inline float sample1D() {
+        return get_random_float();
+    }
+
+    FUNC_QUALIFIER inline glm::vec2 sample2D() {
+        return glm::vec2(get_random_float(), get_random_float());
+    }
+
+    FUNC_QUALIFIER inline glm::vec3 sample3D() {
+        return glm::vec3(sample2D(), get_random_float());
+    }
+
+    FUNC_QUALIFIER inline glm::vec4 sample4D() {
+        return glm::vec4(sample2D(), sample2D());
+    }
+
+    
+    /**
+     * Handy-dandy hash function that provides seeds for random number generation.
+     */
+    FUNC_QUALIFIER inline static unsigned int utilhash(unsigned int a)
+    {
+        a = (a + 0x7ed55d16) + (a << 12);
+        a = (a ^ 0xc761c23c) ^ (a >> 19);
+        a = (a + 0x165667b1) + (a << 5);
+        a = (a + 0xd3a2646c) ^ (a << 9);
+        a = (a + 0xfd7046c5) + (a << 3);
+        a = (a ^ 0xb55a4f09) ^ (a >> 16);
+        return a;
+    }
+};
 
 #define Pi 3.1415926535897932384626422832795028841971f
 #define PiTwo 6.2831853071795864769252867665590057683943f
@@ -49,20 +103,6 @@ FUNC_QUALIFIER inline bool solveQuadratic(const float& a, const float& b, const 
     if (x0 > x1)
         swap(x0, x1);
     return true;
-}
-
-FUNC_QUALIFIER inline float get_random_float()
-{
-#ifdef GPU_PATH_TRACER
-    return 0.5f; // todo
-#else
-    // return 0.5f;// todo
-    static std::random_device dev;
-    static std::mt19937 rng(dev());
-    static std::uniform_real_distribution<float> dist(0.f, 1.f); // distribution in range [1, 6]
-
-    return dist(rng);
-#endif
 }
 
 static std::string vec3ToString(const glm::vec3& vec)
@@ -232,35 +272,5 @@ namespace Math
     {
         glm::vec3 yx = x - y;
         return pdf * glm::dot(yx, yx) / absDot(ny, glm::normalize(yx));
-    }
-
-    /**
-     * Handy-dandy hash function that provides seeds for random number generation.
-     */
-    FUNC_QUALIFIER inline unsigned int utilhash(unsigned int a)
-    {
-        a = (a + 0x7ed55d16) + (a << 12);
-        a = (a ^ 0xc761c23c) ^ (a >> 19);
-        a = (a + 0x165667b1) + (a << 5);
-        a = (a + 0xd3a2646c) ^ (a << 9);
-        a = (a + 0xfd7046c5) + (a << 3);
-        a = (a ^ 0xb55a4f09) ^ (a >> 16);
-        return a;
-    }
-
-    FUNC_QUALIFIER inline float sample1D() {
-        return get_random_float();
-    }
-
-    FUNC_QUALIFIER inline glm::vec2 sample2D() {
-        return glm::vec2(get_random_float(), get_random_float());
-    }
-
-    FUNC_QUALIFIER inline glm::vec3 sample3D() {
-        return glm::vec3(sample2D(), get_random_float());
-    }
-
-    FUNC_QUALIFIER inline glm::vec4 sample4D() {
-        return glm::vec4(sample2D(), sample2D());
     }
 }

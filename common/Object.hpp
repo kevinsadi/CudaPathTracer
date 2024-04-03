@@ -12,17 +12,17 @@
 class Object
 {
 public:
+    float area;
     Object() {}
     virtual ~Object() {}
-    FUNC_QUALIFIER inline virtual bool intersect(const Ray& ray) = 0;
-    FUNC_QUALIFIER inline virtual bool intersect(const Ray& ray, float&, uint32_t&) const = 0;
-    FUNC_QUALIFIER inline virtual Intersection getIntersection(Ray _ray) = 0;
-    FUNC_QUALIFIER inline virtual void getSurfaceProperties(const glm::vec3&, const glm::vec3&, const uint32_t&, const glm::vec2&, glm::vec3&, glm::vec2&) const = 0;
-    FUNC_QUALIFIER inline virtual glm::vec3 evalDiffuseColor(const glm::vec2&) const = 0;
+    // ---------Edtior Only----------
+    // you are free to use virutal method for convenience
     FUNC_QUALIFIER inline virtual Bounds3 getBounds() = 0;
-    FUNC_QUALIFIER inline virtual float getArea() = 0;
-    // Sample a point on the surface of the object, used for area light
-    FUNC_QUALIFIER inline virtual void Sample(Intersection& pos, float& pdf) = 0;
+
+    // ---------Runtime---------
+    // for runtime method, you can't directly use virtual function, you need explicity 
+    // convert Object* to Triangle* or MeshTriangle* and call the method
+    FUNC_QUALIFIER inline virtual bool intersect(const Ray& ray, float&, uint32_t&) const = 0;
 };
 
 

@@ -30,12 +30,13 @@ void Renderer::Render(const Scene& scene)
             // generate primary ray direction
 #pragma omp parallel for
             for (int k = 0; k < this->spp; k++){
+                RNG rng = RNG(k, m, 0, nullptr);
                 // jitter sampling for anti-aliasing
-                float bias = get_random_float();
+                float bias = rng.sample1D();
                 float x = (2 * (i + bias) / (float)scene.width - 1) * imageAspectRatio * scale;
                 float y = (1 - 2 * (j + bias) / (float)scene.height) * scale;
                 glm::vec3 dir = glm::normalize(glm::vec3(-x, y, 1));
-                framebuffer[m] += scene.castRay(Ray(eye_pos, dir)) / (float)this->spp;  
+                framebuffer[m] += scene.castRay(rng, Ray(eye_pos, dir)) / (float)this->spp;  
             }
             m++;
         }

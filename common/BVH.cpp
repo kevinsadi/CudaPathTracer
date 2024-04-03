@@ -2,9 +2,42 @@
 #include <cassert>
 #include "BVH.hpp"
 #include "MathUtils.hpp"
+#include <vector>
+#include <unordered_map>
 
-BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
-                   SplitMethod splitMethod)
+void preorder(BVHBuildNode* root, std::vector<BVHBuildNode*>& nodes) {
+    if (root == NULL) {
+        return;
+    }
+    nodes.emplace_back(root);
+    preorder(root->left, nodes);
+    preorder(root->right, nodes);
+}
+std::vector<BVHBuildNode*> preorderTraversal(BVHBuildNode* root) {
+    std::vector<BVHBuildNode*>nodes;
+    preorder(root, nodes);
+    return nodes;
+}
+
+void SetNextIfMiss(BVHBuildNode* node, BVHBuildNode* val) {
+    if (node->left == nullptr && node->right == nullptr) {
+        return;
+    }
+    else if (node->left && node->right)
+    {
+        node->left->nextIfMiss = node->right;
+        node->right->nextIfMiss = val;
+        SetNextIfMiss(node->left, node->left->nextIfMiss);
+        SetNextIfMiss(node->right, node->right->nextIfMiss);
+    }
+    else
+    {
+        throw std::runtime_error("Error: node has only one child");
+    }
+}
+
+BVHAccel::BVHAccel(std::vector<Object*>& p, std::unordered_map<MeshTriangle*, BVHAccel*>& meshBvhMap, int maxPrimsInNode,
+    SplitMethod splitMethod)
     : maxPrimsInNode(std::min(255, maxPrimsInNode)), splitMethod(splitMethod)
     //   ,primitives(std::move(p))
 {
@@ -16,7 +49,19 @@ BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
     time_t start, stop;
     time(&start);
 
-    root = recursiveBuild(p);
+    root = recursiveBuild(p, meshBvhMap);
+    // (1) use pre-order traversal to set the nextIfHit
+    auto preOrderNodes = preorderTraversal(root);
+    for (int i = 0; i < preOrderNodes.size(); i++) {
+        if (i == preOrderNodes.size() - 1) {
+            preOrderNodes[i]->nextIfHit = nullptr;
+        }
+        else {
+            preOrderNodes[i]->nextIfHit = preOrderNodes[i + 1];
+        }
+    }
+    // (2) use pre-order traversal to set nextIfMiss
+    SetNextIfMiss(root, nullptr);
     // primitives = new Object*[num_primitives];
     // memcpy(primitives, p.data(), num_primitives * sizeof(Object*));
 
@@ -31,7 +76,9 @@ BVHAccel::BVHAccel(std::vector<Object*> p, int maxPrimsInNode,
         hrs, mins, secs);
 }
 
-BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
+int BVHBuildNode::Counter = 0;
+
+BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*>& objects, std::unordered_map<MeshTriangle*, BVHAccel*>& meshBvhMap)
 {
     BVHBuildNode* node = new BVHBuildNode();
 
@@ -42,15 +89,31 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
     if (objects.size() == 1) {
         // Create leaf _BVHBuildNode_
         node->bounds = objects[0]->getBounds();
-        node->object = objects[0];
+        MeshTriangle* mesh = dynamic_cast<MeshTriangle*>(objects[0]);
+        Triangle* triangle = dynamic_cast<Triangle*>(objects[0]);
+        if (mesh)
+        {
+            node->mesh = mesh;
+            std::vector<Object*> triangles(mesh->num_triangles);
+            for (int i = 0; i < mesh->num_triangles; i++)
+            {
+                triangles[i] = mesh->triangles + i;
+            }
+            node->meshBvhRoot = new BVHAccel(triangles, meshBvhMap, 1, SplitMethod::NAIVE);
+            meshBvhMap[mesh] = node->meshBvhRoot;
+        }
+        else
+        {
+            node->triangle = triangle;
+        }
         node->left = nullptr;
         node->right = nullptr;
-        node->area = objects[0]->getArea();
+        node->area = objects[0]->area;
         return node;
     }
     else if (objects.size() == 2) {
-        node->left = recursiveBuild(std::vector{objects[0]});
-        node->right = recursiveBuild(std::vector{objects[1]});
+        node->left = recursiveBuild(std::vector{ objects[0] }, meshBvhMap);
+        node->right = recursiveBuild(std::vector{ objects[1] }, meshBvhMap);
 
         node->bounds = Union(node->left->bounds, node->right->bounds);
         node->area = node->left->area + node->right->area;
@@ -60,26 +123,26 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
         Bounds3 centroidBounds;
         for (int i = 0; i < objects.size(); ++i)
             centroidBounds =
-                Union(centroidBounds, objects[i]->getBounds().Centroid());
+            Union(centroidBounds, objects[i]->getBounds().Centroid());
         int dim = centroidBounds.maxExtent();
         switch (dim) {
         case 0:
             std::sort(objects.begin(), objects.end(), [](auto f1, auto f2) {
                 return f1->getBounds().Centroid().x <
-                       f2->getBounds().Centroid().x;
-            });
+                    f2->getBounds().Centroid().x;
+                });
             break;
         case 1:
             std::sort(objects.begin(), objects.end(), [](auto f1, auto f2) {
                 return f1->getBounds().Centroid().y <
-                       f2->getBounds().Centroid().y;
-            });
+                    f2->getBounds().Centroid().y;
+                });
             break;
         case 2:
             std::sort(objects.begin(), objects.end(), [](auto f1, auto f2) {
                 return f1->getBounds().Centroid().z <
-                       f2->getBounds().Centroid().z;
-            });
+                    f2->getBounds().Centroid().z;
+                });
             break;
         }
 
@@ -92,8 +155,8 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
 
         assert(objects.size() == (leftshapes.size() + rightshapes.size()));
 
-        node->left = recursiveBuild(leftshapes);
-        node->right = recursiveBuild(rightshapes);
+        node->left = recursiveBuild(leftshapes, meshBvhMap);
+        node->right = recursiveBuild(rightshapes, meshBvhMap);
 
         node->bounds = Union(node->left->bounds, node->right->bounds);
         node->area = node->left->area + node->right->area;
@@ -102,7 +165,7 @@ BVHBuildNode* BVHAccel::recursiveBuild(std::vector<Object*> objects)
     return node;
 }
 
-BVHAccel::~BVHAccel(){
+BVHAccel::~BVHAccel() {
     // if (primitives)
     // {
     //     delete[] primitives;
@@ -111,4 +174,13 @@ BVHAccel::~BVHAccel(){
     {
         delete root;
     }
+}
+
+BVHBuildNode::~BVHBuildNode() {
+    if (left)
+        delete left;
+    if (right)
+        delete right;
+    if (meshBvhRoot)
+        delete meshBvhRoot;
 }

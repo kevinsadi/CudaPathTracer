@@ -19,7 +19,7 @@ struct Intersection
         coords = glm::vec3();
         normal = glm::vec3();
         distance = kDoubleInfinity;
-        obj = nullptr;
+        // obj = nullptr;
     }
     bool happened;
     glm::vec3 coords;
@@ -27,7 +27,7 @@ struct Intersection
     glm::vec3 normal;
     glm::vec3 emit;
     double distance;
-    Object *obj;
+    float triangleArea;
     Material m;
 };
 #endif // RAYTRACING_INTERSECTION_H
