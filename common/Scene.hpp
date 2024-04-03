@@ -4,9 +4,7 @@
 
 #pragma once
 
-#include "AreaLight.hpp"
 #include "BVH.hpp"
-#include "Light.hpp"
 #include "Object.hpp"
 #include "Triangle.hpp"
 #include "Ray.hpp"
