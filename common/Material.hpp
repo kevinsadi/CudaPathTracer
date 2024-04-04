@@ -1,8 +1,8 @@
 #pragma once
 
 #include <glm/glm.hpp>
-#include <glm/gtx/intersect.hpp>
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/intersect.hpp>
 
 #include "MathUtils.hpp"
 
@@ -55,7 +55,8 @@ FUNC_QUALIFIER static float fresnel(float cosIn, float ior) {
     }
     float cosTr = glm::sqrt(1.f - sinTr * sinTr);
     return (Math::square((cosIn - ior * cosTr) / (cosIn + ior * cosTr)) +
-        Math::square((ior * cosIn - cosTr) / (ior * cosIn + cosTr))) * .5f;
+            Math::square((ior * cosIn - cosTr) / (ior * cosIn + cosTr))) *
+           .5f;
 #endif
 }
 
@@ -81,16 +82,16 @@ FUNC_QUALIFIER static float GTR2Distrib(float cosTheta, float alpha) {
 
 FUNC_QUALIFIER static float GTR2Pdf(glm::vec3 n, glm::vec3 m, glm::vec3 wo, float alpha) {
     return GTR2Distrib(glm::dot(n, m), alpha) * schlickG(glm::dot(n, wo), alpha) *
-        Math::absDot(m, wo) / Math::absDot(n, wo);
+           Math::absDot(m, wo) / Math::absDot(n, wo);
 }
 
 /**
-* Sampling (Trowbridge-Reitz/GTR2/GGX) microfacet distribution, but only visible normals.
-* This reduces invalid samples and make pdf values at grazing angles more stable
-* See [Sampling the GGX Distribution of Visible Normals, Eric Heitz, JCGT 2018]:
-* https://jcgt.org/published/0007/04/01/
-* Note: 
-*/
+ * Sampling (Trowbridge-Reitz/GTR2/GGX) microfacet distribution, but only visible normals.
+ * This reduces invalid samples and make pdf values at grazing angles more stable
+ * See [Sampling the GGX Distribution of Visible Normals, Eric Heitz, JCGT 2018]:
+ * https://jcgt.org/published/0007/04/01/
+ * Note:
+ */
 FUNC_QUALIFIER static glm::vec3 GTR2Sample(glm::vec3 n, glm::vec3 wo, float alpha, glm::vec2 r) {
     glm::mat3 transMat = Math::localRefMatrix(n);
     glm::mat3 transInv = glm::inverse(transMat);
@@ -124,13 +125,17 @@ struct Material {
     }
 
     FUNC_QUALIFIER float lambertianPdf(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
-        return Math::satDot(n, wi) * PiInv;
+        // ! seems to be wrong to calculate pdf
+        // return Math::satDot(n, wi) * PiInv;
+        return 0.5f * PiInv;
     }
 
-    FUNC_QUALIFIER void lambertianSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample& sample) {
-        sample.dir = Math::sampleHemisphereCosine(n, r.x, r.y);
-        sample.bsdf = baseColor * PiInv;
-        sample.pdf = Math::satDot(n, sample.dir) * PiInv;
+    FUNC_QUALIFIER void lambertianSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
+        sample.dir = Math::sampleHemisphereCosine(n, r.x, r.y); // wi
+        sample.bsdf = baseColor * PiInv; // f_r
+        // ! seems to be wrong to calculate pdf
+        // sample.pdf = Math::satDot(n, sample.dir) * PiInv;
+        sample.pdf = 0.5f * PiInv;
         sample.type = Diffuse | Reflection;
     }
 
@@ -142,7 +147,7 @@ struct Material {
         return 0.f;
     }
 
-    FUNC_QUALIFIER void dielectricSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample& sample) {
+    FUNC_QUALIFIER void dielectricSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
         float pdfRefl = fresnel(glm::dot(n, wo), ior);
 
         sample.bsdf = baseColor;
@@ -151,8 +156,7 @@ struct Material {
             sample.dir = glm::reflect(-wo, n);
             sample.type = Specular | Reflection;
             sample.pdf = 1.f;
-        }
-        else {
+        } else {
             bool result = Math::refract(n, wo, ior, sample.dir);
             if (!result) {
                 sample.type = Invalid;
@@ -189,31 +193,28 @@ struct Material {
         return glm::mix(
             Math::satDot(n, wi) * PiInv,
             GTR2Pdf(n, h, wo, roughness * roughness) / (4.f * Math::absDot(h, wo)),
-            1.f / (2.f - metallic)
-        );
+            1.f / (2.f - metallic));
     }
 
-    FUNC_QUALIFIER void metallicWorkflowSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample& sample) {
+    FUNC_QUALIFIER void metallicWorkflowSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
         float alpha = roughness * roughness;
 
         if (r.z > (1.f / (2.f - metallic))) {
             sample.dir = Math::sampleHemisphereCosine(n, r.x, r.y);
-        }
-        else {
+        } else {
             glm::vec3 h = GTR2Sample(n, wo, alpha, glm::vec2(r));
             sample.dir = -glm::reflect(wo, h);
         }
 
         if (glm::dot(n, sample.dir) < 0.f) {
             sample.type = Invalid;
-        }
-        else {
+        } else {
             sample.bsdf = metallicWorkflowBSDF(n, wo, sample.dir);
             sample.pdf = metallicWorkflowPdf(n, wo, sample.dir);
             sample.type = Glossy | Reflection;
         }
     }
-
+    // f_r
     FUNC_QUALIFIER glm::vec3 BSDF(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
         switch (type) {
         case Material::Type::Lambertian:
@@ -238,7 +239,7 @@ struct Material {
         return 0.f;
     }
 
-    FUNC_QUALIFIER void sample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample& sample) {
+    FUNC_QUALIFIER void sample(glm::vec3 n, glm::vec3 wo, glm::vec3 r, BSDFSample &sample) {
         switch (type) {
         case Material::Type::Lambertian:
             lambertianSample(n, wo, r, sample);

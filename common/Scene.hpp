@@ -95,15 +95,7 @@ Intersection Scene::intersect(const Ray &ray) const {
 }
 
 void Scene::sampleLight(Intersection &pos, float &pdf) const {
-    float emit_area_sum = 0;
-    // for (uint32_t k = 0; k < objects.size(); ++k) {
-    //     auto object = objects[k];
-    for (uint32_t k = 0; k < num_meshes; ++k) {
-        auto object = meshes_data[k];
-        if (object->material.type == Material::Type::Light) {
-            emit_area_sum += object->getArea();
-        }
-    }
+    float emit_area_sum = lightAreaSum();
     float p = get_random_float() * emit_area_sum;
     emit_area_sum = 0;
     // for (uint32_t k = 0; k < objects.size(); ++k) {
@@ -122,6 +114,8 @@ void Scene::sampleLight(Intersection &pos, float &pdf) const {
 
 float Scene::lightAreaSum() const {
     float emit_area_sum = 0;
+    // for (uint32_t k = 0; k < objects.size(); ++k) {
+    //     auto object = objects[k];
     for (uint32_t k = 0; k < num_meshes; ++k) {
         auto object = meshes_data[k];
         if (object->material.type == Material::Type::Light) {
@@ -131,68 +125,55 @@ float Scene::lightAreaSum() const {
     return emit_area_sum;
 }
 
-// Implementation of Path Tracing
 glm::vec3 Scene::castRay(const Ray &eyeRay) const {
-    glm::vec3 accRadiance(0.f);
+    glm::vec3 accRadiance(0.f), throughput(1.f);
 
     Ray ray = eyeRay;
     Intersection intersec = Scene::intersect(ray);
+    Material material = intersec.m;
 
-    // if not hit anything, return background color
     if (!intersec.happened) {
-        // if (scene->envMap != nullptr) {
-        // 	glm::vec2 uv = Math::toPlane(ray.direction);
-        // 	accRadiance += scene->envMap->linearSample(uv);
-        // }
+        // sample envmap
         return accRadiance;
     }
 
-    // TODO sample textured material
-    Material &material = intersec.m; // scene->getTexturedMaterialAndSurface(intersec);
-    // hit a light, return light color
-    if (material.type == Material::Type::Light) {
-        // ! > or < depends on the normal direction
-        // TODO need to tweak light normal in obj file
-        // if (glm::dot(intersec.normal, ray.direction) < 0.f) {
-            accRadiance = material.baseColor;
-        // }
+    if (intersec.m.type == Material::Type::Light) {
+        accRadiance = material.baseColor;
         return accRadiance;
     }
-    glm::vec3 throughput(1.f);
-    glm::vec3 wo = -ray.direction;
-
     for (int depth = 1; depth <= this->maxDepth; depth++) {
-        bool deltaBSDF = (material.type == Material::Type::Dielectric);
-
-        if (material.type != Material::Type::Dielectric && glm::dot(intersec.normal, wo) < 0.f) {
-            intersec.normal = -intersec.normal;
-        }
+		bool deltaBSDF = (material.type == Material::Type::Dielectric); // ? why this
 
         if (!deltaBSDF) {
-            glm::vec3 radiance; // emitted radiance
-            glm::vec3 wi;
-
+            // direct lighting
             Intersection lightSample;
             float lightPdf;
             sampleLight(lightSample, lightPdf);
-            // float lightPdf = scene->sampleDirectLight(intersec.pos, sample4D(rng), radiance, wi);
-            radiance = lightSample.emit;
-            wi = glm::normalize(lightSample.coords - intersec.coords);
-
-            // check light blockage
-            ray = Ray(intersec.coords + wi * Epsilon5, wi);
-            Intersection shadowIntersec = Scene::intersect(ray);
-
-            if (lightPdf > 0.f && shadowIntersec.distance - glm::length(lightSample.coords - intersec.coords) > -Epsilon5) {
-                float BSDFPdf = material.pdf(intersec.normal, wo, wi);
-                accRadiance += throughput * material.BSDF(intersec.normal, wo, wi) *
-                               radiance * Math::satDot(intersec.normal, wi) / lightPdf *
-                               Math::powerHeuristic(lightPdf, BSDFPdf);
+            glm::vec3 p = intersec.coords;
+            glm::vec3 x = lightSample.coords;
+            glm::vec3 wo = -ray.direction;
+            glm::vec3 wi = glm::normalize(x - p);
+            Ray shadowRay(p + wi * Epsilon5, wi);
+            Intersection shadowIntersec = Scene::intersect(shadowRay);
+            if (shadowIntersec.distance - glm::length(x - p) > -Epsilon5) {
+                glm::vec3 emit = lightSample.emit;
+                glm::vec3 f_r = material.BSDF(intersec.normal, wo, wi);
+                float cos_theta = Math::satDot(intersec.normal, wi);
+                float cos_theta_prime = Math::satDot(lightSample.normal, -wi);
+                float r2 = glm::dot(x - p, x - p);
+                accRadiance += throughput * emit * f_r * cos_theta * cos_theta_prime / r2 / lightPdf;
             }
         }
-        // indirect lighting
+
+        // indirect lighting 
         BSDFSample sample;
-        material.sample(intersec.normal, wo, Math::sample3D(), sample);
+        material.sample(intersec.normal, -ray.direction, Math::sample3D(), sample);
+        glm::vec3 p = intersec.coords;
+        glm::vec3 wo = -ray.direction;
+        glm::vec3 wi = sample.dir;
+        glm::vec3 f_r = sample.bsdf;
+        float indirectPdf = sample.pdf;
+        float cos_theta = Math::absDot(intersec.normal, wi);
 
         if (sample.type == BSDFSampleType::Invalid) {
             // Terminate path if sampling fails
@@ -200,45 +181,26 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
         } else if (sample.pdf < Epsilon8) {
             break;
         }
-        bool deltaSample = (sample.type & BSDFSampleType::Specular);
-        throughput *= sample.bsdf / sample.pdf *
-                      (deltaSample ? 1.f : Math::absDot(intersec.normal, sample.dir));
 
-        ray = Ray(intersec.coords + sample.dir * Epsilon5, sample.dir);
-        // ray = makeOffsetedRay(intersec.coords, sample.dir);
+        bool deltaSample = (sample.type & BSDFSampleType::Specular); // ? why this
+        throughput *= f_r / indirectPdf * (deltaSample ? 1.f : cos_theta);
 
-        glm::vec3 curPos = intersec.coords;
+        // new ray, new intersection, new material
+        ray = Ray(p + wi * Epsilon5, wi);
         intersec = Scene::intersect(ray);
-        wo = -ray.direction;
+        material = intersec.m;
 
         if (!intersec.happened) {
-            // if (scene->envMap != nullptr) {
-            //     glm::vec3 radiance = scene->envMap->linearSample(Math::toPlane(ray.direction)) * throughput;
-            //     float weight = deltaSample ? 1.f : Math::powerHeuristic(sample.pdf, scene->environmentMapPdf(ray.direction));
-            //     accRadiance += radiance * weight;
-            // }
+            // sample envmap
             break;
         }
-        // TODO sample textured material
-        material = intersec.m; // material = scene->getTexturedMaterialAndSurface(intersec);
-
+        // if it is light again
         if (material.type == Material::Type::Light) {
-#if SCENE_LIGHT_SINGLE_SIDED
-            // ! > or < depends on the normal direction
-            // TODO need to tweak light normal in obj file
-            if (glm::dot(intersec.normal, ray.direction) > 0.f) {
-                break;
-            }
-#endif
-            glm::vec3 radiance = material.baseColor;
-
-            float lightPdf = Math::pdfAreaToSolidAngle(intersec.obj->getArea() / Scene::lightAreaSum(), curPos, intersec.coords, intersec.normal);
-
-            float weight = deltaSample ? 1.f : Math::powerHeuristic(sample.pdf, lightPdf);
-            accRadiance += radiance * throughput * weight;
+            float lightPdf = Math::pdfAreaToSolidAngle(intersec.obj->getArea() / Scene::lightAreaSum(), p, intersec.coords, intersec.normal);
+            float weight = deltaSample ? 1.f : Math::powerHeuristic(indirectPdf, lightPdf);
+            accRadiance += throughput * intersec.emit * weight;
             break;
         }
     }
-
     return accRadiance;
 }

@@ -53,7 +53,7 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         // Material* light = new Material(Lambert, (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
         // light->m_albedo = glm::vec3(0.65f);
         Material red;
-        red.baseColor = glm::vec3(0.65f, 0.05f, 0.05f);
+        red.baseColor = glm::vec3(0.63f, 0.065f, 0.05f);
         red.ior = 0.f;
         Material green;
         green.baseColor = glm::vec3(0.14f, 0.45f, 0.091f);
@@ -63,8 +63,7 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         white.ior = 0.f;
         Material light;
         light.type = Material::Type::Light;
-        light.baseColor = (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)) / 4.f; // !temp fix
-        
+        light.baseColor = (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f));
         light.ior = 0.f;
         
 
