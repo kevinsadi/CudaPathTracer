@@ -55,6 +55,8 @@ TODO
 
 ### Rendering
 
+- [ ] Bespoke material definition loading 
+- [ ] Textured materials
 - [x] Naive Diffuse Surfaces
 - [ ] Lambert Material
 - [ ] Metal Material
