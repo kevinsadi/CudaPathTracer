@@ -2,7 +2,7 @@
 #include "MathUtils.hpp"
 #include "OBJ_Loader.hpp"
 
-MeshTriangle::MeshTriangle(const std::string& filename, Material* mt) {
+MeshTriangle::MeshTriangle(const std::string& filename, Material& mt) {
     objl::Loader loader;
     loader.LoadFile(filename);
     area = 0;

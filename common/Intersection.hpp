@@ -9,7 +9,7 @@
 #include "MathUtils.hpp"
 
 class Object;
-class Sphere;
+// class Sphere;
 
 struct Intersection
 {
@@ -20,7 +20,6 @@ struct Intersection
         normal = glm::vec3();
         distance = kDoubleInfinity;
         obj = nullptr;
-        m = nullptr;
     }
     bool happened;
     glm::vec3 coords;
@@ -29,6 +28,6 @@ struct Intersection
     glm::vec3 emit;
     double distance;
     Object *obj;
-    Material *m;
+    Material m;
 };
 #endif // RAYTRACING_INTERSECTION_H

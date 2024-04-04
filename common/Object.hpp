@@ -23,7 +23,6 @@ public:
     FUNC_QUALIFIER inline virtual float getArea() = 0;
     // Sample a point on the surface of the object, used for area light
     FUNC_QUALIFIER inline virtual void Sample(Intersection& pos, float& pdf) = 0;
-    FUNC_QUALIFIER inline virtual bool hasEmit() = 0;
 };
 
 

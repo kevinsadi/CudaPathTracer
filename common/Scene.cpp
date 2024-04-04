@@ -44,15 +44,29 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         scene.maxDepth = maxDepth;
         scene.camPos = glm::vec3(278, 273, -800);
 
-        Material* red = new Material(Lambert);
-        red->m_albedo = glm::vec3(0.63f, 0.065f, 0.05f);
-        Material* green = new Material(Lambert);
-        green->m_albedo = glm::vec3(0.14f, 0.45f, 0.091f);
-        Material* white = new Material(Lambert);
-        white->m_albedo = glm::vec3(0.725f, 0.71f, 0.68f);
-        Material* light = new Material(Lambert, (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
-        light->m_albedo = glm::vec3(0.65f);
+        // Material* red = new Material(Lambert);
+        // red->m_albedo = glm::vec3(0.63f, 0.065f, 0.05f);
+        // Material* green = new Material(Lambert);
+        // green->m_albedo = glm::vec3(0.14f, 0.45f, 0.091f);
+        // Material* white = new Material(Lambert);
+        // white->m_albedo = glm::vec3(0.725f, 0.71f, 0.68f);
+        // Material* light = new Material(Lambert, (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f)));
+        // light->m_albedo = glm::vec3(0.65f);
+        Material red;
+        red.baseColor = glm::vec3(0.65f, 0.05f, 0.05f);
+        red.ior = 0.f;
+        Material green;
+        green.baseColor = glm::vec3(0.14f, 0.45f, 0.091f);
+        green.ior = 0.f;
+        Material white;
+        white.baseColor = glm::vec3(0.725f, 0.71f, 0.68f);
+        white.ior = 0.f;
+        Material light;
+        light.type = Material::Type::Light;
+        light.baseColor =  (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f));
+        light.ior = 0.f;
         
+
         scene.AddMaterial(red);
         scene.AddMaterial(green);
         scene.AddMaterial(white);

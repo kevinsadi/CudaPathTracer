@@ -13,7 +13,8 @@
 #define Pi 3.1415926535897932384626422832795028841971f
 #define PiTwo 6.2831853071795864769252867665590057683943f
 #define PiInv 1.f / Pi
-#define Epsilon 1e-5f
+#define Epsilon5 1e-5f
+#define Epsilon8 1e-8f
 
 #define kDoubleInfinity 1e30f
 #define kDoubleNegInfinity -kDoubleInfinity
@@ -245,5 +246,21 @@ namespace Math
         a = (a + 0xfd7046c5) + (a << 3);
         a = (a ^ 0xb55a4f09) ^ (a >> 16);
         return a;
+    }
+
+    FUNC_QUALIFIER inline float sample1D() {
+        return get_random_float();
+    }
+
+    FUNC_QUALIFIER inline glm::vec2 sample2D() {
+        return glm::vec2(get_random_float(), get_random_float());
+    }
+
+    FUNC_QUALIFIER inline glm::vec3 sample3D() {
+        return glm::vec3(sample2D(), get_random_float());
+    }
+
+    FUNC_QUALIFIER inline glm::vec4 sample4D() {
+        return glm::vec4(sample2D(), sample2D());
     }
 }

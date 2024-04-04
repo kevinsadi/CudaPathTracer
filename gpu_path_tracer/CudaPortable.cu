@@ -4,7 +4,7 @@
 #include <common/Material.hpp>
 #include <common/Object.hpp>
 #include <common/Triangle.hpp>
-#include <common/Sphere.hpp>
+// #include <common/Sphere.hpp>
 #include <common/Scene.hpp>
 #include <cuda.h>
 #include <cuda_runtime.h>
@@ -172,21 +172,21 @@ void BVHAccel::FreeCuda() const
     FreeAndUnregister(this);
 }
 
-void Sphere::MallocCuda(Sphere*& device_ptr) const
-{
-    AllocateAndRegisterIfNullptr(this, device_ptr, 1);
-    Sphere temp = *this;
-    if (this->material != nullptr)
-    {
-        // not duplicate the material but point to the device memory of the material
-        temp.material = (Material*)GetDeviceMemory(this->material);
-    }
-    cudaMemcpy(device_ptr, &temp, sizeof(Sphere), cudaMemcpyHostToDevice);
-}
-void Sphere::FreeCuda() const
-{
-    FreeAndUnregister(this);
-}
+// void Sphere::MallocCuda(Sphere*& device_ptr) const
+// {
+//     AllocateAndRegisterIfNullptr(this, device_ptr, 1);
+//     Sphere temp = *this;
+//     if (this->material != nullptr)
+//     {
+//         // not duplicate the material but point to the device memory of the material
+//         temp.material = (Material*)GetDeviceMemory(this->material);
+//     }
+//     cudaMemcpy(device_ptr, &temp, sizeof(Sphere), cudaMemcpyHostToDevice);
+// }
+// void Sphere::FreeCuda() const
+// {
+//     FreeAndUnregister(this);
+// }
 
 void Triangle::MallocCuda(Triangle*& device_ptr) const
 {

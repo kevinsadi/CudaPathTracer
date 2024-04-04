@@ -5,12 +5,13 @@
 #pragma once
 
 #include "BVH.hpp"
-#include "Object.hpp"
-#include "Triangle.hpp"
-#include "Ray.hpp"
-#include <vector>
-#include <string>
 #include "CudaPortable.hpp"
+#include "Object.hpp"
+#include "Ray.hpp"
+#include "Settings.hpp"
+#include "Triangle.hpp"
+#include <string>
+#include <vector>
 
 class Scene {
 public:
@@ -24,53 +25,60 @@ public:
     glm::vec3 backgroundColor = glm::vec3(0.235294, 0.67451, 0.843137);
     int maxDepth = 1;
     float RussianRoulette = 0.8;
-    BVHAccel* bvh = nullptr;
-    // [!] as polymorphic is not supported in CUDA, currently we only allow MeshTriangle
-    // std::vector<Object *> objects;
-    std::vector<MeshTriangle*> meshes; // [!] for build scene stage only, dont use it in rendering
-    MeshTriangle** meshes_data = nullptr;
+    BVHAccel *bvh = nullptr;
+    // [!] as polymorphic is not supported in CUDA, currently we only allow
+    // MeshTriangle std::vector<Object *> objects;
+    std::vector<MeshTriangle *> meshes; // [!] for build scene stage only, dont use it in rendering
+    MeshTriangle **meshes_data = nullptr;
     int num_meshes = 0;
-    std::vector<Material*> materials;
-    Material** materials_data = nullptr;
+    std::vector<Material> materials;
+    Material *materials_data = nullptr;
     int num_materials = 0;
 
     Scene(int w, int h) : width(w), height(h) {}
 
-    void Add(Object* object) {
-        if (typeid(*object) != typeid(MeshTriangle))
-        {
+    void Add(Object *object) {
+        if (typeid(*object) != typeid(MeshTriangle)) {
             throw std::runtime_error("only support MeshTriangle");
         }
-        // objects.push_back(object); 
-        meshes.push_back((MeshTriangle*)object);
+        // objects.push_back(object);
+        meshes.push_back((MeshTriangle *)object);
         num_meshes = meshes.size();
         meshes_data = meshes.data();
     }
-    void AddMaterial(Material* material) {
+
+    void AddMaterial(Material material) {
         materials.push_back(material);
         materials_data = materials.data();
         num_materials = materials.size();
     }
-    // void Add(std::unique_ptr<Light> light) { lights.push_back(std::move(light)); }
 
     // const std::vector<Object *> &get_objects() const { return objects; }
-    // const std::vector<std::unique_ptr<Light>> &get_lights() const { return lights; }
-    FUNC_QUALIFIER inline Intersection intersect(const Ray& ray) const;
+    // const std::vector<std::unique_ptr<Light>> &get_lights() const { return
+    // lights; }
+    FUNC_QUALIFIER inline Intersection intersect(const Ray &ray) const;
     void buildBVH();
-    FUNC_QUALIFIER inline glm::vec3 castRay(const Ray& eyeRay) const;
-    FUNC_QUALIFIER inline void sampleLight(Intersection& pos, float& pdf) const;
-    // FUNC_QUALIFIER inline bool trace(const Ray& ray, const std::vector<Object*>& objects, float& tNear, uint32_t& index, Object** hitObject);
-    // std::tuple<glm::vec3, glm::vec3> HandleAreaLight(const AreaLight &light, const glm::vec3 &hitPoint, const glm::vec3 &N,
-    //                                                const glm::vec3 &shadowPointOrig,
-    //                                                const std::vector<Object *> &objects, uint32_t &index,
-    //                                                const glm::vec3 &dir, float specularExponent);
+    FUNC_QUALIFIER inline glm::vec3 castRay(const Ray &eyeRay) const;
+    FUNC_QUALIFIER inline void sampleLight(Intersection &pos, float &pdf) const;
+    FUNC_QUALIFIER inline float lightAreaSum() const;
+    // FUNC_QUALIFIER inline bool trace(const Ray& ray, const
+    // std::vector<Object*>& objects, float& tNear, uint32_t& index, Object**
+    // hitObject); std::tuple<glm::vec3, glm::vec3> HandleAreaLight(const
+    // AreaLight &light, const glm::vec3 &hitPoint, const glm::vec3 &N,
+    //                                                const glm::vec3
+    //                                                &shadowPointOrig, const
+    //                                                std::vector<Object *>
+    //                                                &objects, uint32_t &index,
+    //                                                const glm::vec3 &dir, float
+    //                                                specularExponent);
 
     // creating the scene (adding objects and lights)
 
     // std::vector<std::unique_ptr<Light>> lights;
 
     // Compute reflection direction
-    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3& I, const glm::vec3& N) const {
+    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3 &I,
+                                            const glm::vec3 &N) const {
         return I - 2 * glm::dot(I, N) * N;
     }
 
@@ -82,17 +90,17 @@ public:
     CUDA_PORTABLE(Scene);
 };
 
-Intersection Scene::intersect(const Ray& ray) const {
+Intersection Scene::intersect(const Ray &ray) const {
     return this->bvh->Intersect(ray);
 }
 
-void Scene::sampleLight(Intersection& pos, float& pdf) const {
+void Scene::sampleLight(Intersection &pos, float &pdf) const {
     float emit_area_sum = 0;
     // for (uint32_t k = 0; k < objects.size(); ++k) {
     //     auto object = objects[k];
     for (uint32_t k = 0; k < num_meshes; ++k) {
         auto object = meshes_data[k];
-        if (object->hasEmit()) {
+        if (object->material.type == Material::Type::Light) {
             emit_area_sum += object->getArea();
         }
     }
@@ -102,7 +110,7 @@ void Scene::sampleLight(Intersection& pos, float& pdf) const {
     //     auto object = objects[k];
     for (uint32_t k = 0; k < num_meshes; ++k) {
         auto object = meshes_data[k];
-        if (object->hasEmit()) {
+        if (object->material.type == Material::Type::Light) {
             emit_area_sum += object->getArea();
             if (p <= emit_area_sum) {
                 object->Sample(pos, pdf);
@@ -112,93 +120,115 @@ void Scene::sampleLight(Intersection& pos, float& pdf) const {
     }
 }
 
-#define kEpsilon 0.0005
+float Scene::lightAreaSum() const {
+    float emit_area_sum = 0;
+    for (uint32_t k = 0; k < num_meshes; ++k) {
+        auto object = meshes_data[k];
+        if (object->material.type == Material::Type::Light) {
+            emit_area_sum += object->getArea();
+        }
+    }
+    return emit_area_sum;
+}
 
 // Implementation of Path Tracing
-glm::vec3 Scene::castRay(const Ray& eyeRay) const {
-    glm::vec3 accRadiance(0);
+glm::vec3 Scene::castRay(const Ray &eyeRay) const {
+    glm::vec3 accRadiance(0.f);
 
     Ray ray = eyeRay;
     Intersection intersec = Scene::intersect(ray);
 
     // if not hit anything, return background color
-    if (!intersec.happened)
+    if (!intersec.happened) {
+        // if (scene->envMap != nullptr) {
+        // 	glm::vec2 uv = Math::toPlane(ray.direction);
+        // 	accRadiance += scene->envMap->linearSample(uv);
+        // }
         return accRadiance;
-    // if hit light, return light emission
-    if (intersec.m->hasEmission())
-        return intersec.m->getEmission();
+    }
 
-    glm::vec3 throughput(1.0f);
+    // TODO sample textured material
+    Material &material = intersec.m; // scene->getTexturedMaterialAndSurface(intersec);
+    // hit a light, return light color
+    if (material.type == Material::Type::Light) {
+        if (glm::dot(intersec.normal, ray.direction) > 0.f) {
+            accRadiance = material.baseColor;
+        }
+        return accRadiance;
+    }
+    glm::vec3 throughput(1.f);
     glm::vec3 wo = -ray.direction;
-    glm::vec3 normal = intersec.normal;
-    Material* material = intersec.m;
-    auto mateiralType = material->getType();
-    for (int depth = 0; depth < this->maxDepth; ++depth)
-    {
-        bool deltaBSDF = (mateiralType == Dielectric);
 
-        if (mateiralType != Dielectric && glm::dot(normal, wo) < 0.f) {
-            normal = -normal;
-            intersec.normal = normal;
+    for (int depth = 1; depth <= this->maxDepth; depth++) {
+        bool deltaBSDF = (material.type == Material::Type::Dielectric);
+
+        if (material.type != Material::Type::Dielectric &&
+            glm::dot(intersec.normal, wo) < 0.f) {
+            intersec.normal = -intersec.normal;
         }
 
         if (!deltaBSDF) {
-            glm::vec3 radiance = intersec.emit;
+            glm::vec3 radiance; // emitted radiance
             glm::vec3 wi;
+
+            Intersection lightSample;
             float lightPdf;
-            sampleLight(intersec, lightPdf);
+            sampleLight(lightSample, lightPdf);
+            // float lightPdf = scene->sampleDirectLight(intersec.pos, sample4D(rng),
+            // radiance, wi);
+            radiance = lightSample.emit;
+            wi = glm::normalize(lightSample.coords - intersec.coords);
 
             if (lightPdf > 0) {
-                float BSDFPdf = material->pdf(wi, wo, normal);
-                accRadiance += throughput * material->eval(wi, wo, normal) *
-                    radiance * Math::satDot(normal, wi) / lightPdf * Math::powerHeuristic(lightPdf, BSDFPdf);
+                float BSDFPdf = material.pdf(intersec.normal, wo, wi);
+                accRadiance += throughput * material.BSDF(intersec.normal, wo, wi) *
+                               radiance * Math::satDot(intersec.normal, wi) / lightPdf *
+                               Math::powerHeuristic(lightPdf, BSDFPdf);
             }
         }
+        // indirect lighting
+        BSDFSample sample;
+        material.sample(intersec.normal, wo, Math::sample3D(), sample);
 
-        // BSDFSample sample;
-        // material.sample(intersec.norm, intersec.wo, sample3D(rng), sample);
-        glm::vec3 dummy(0.0f); // todo: ???
-        glm::vec3 sampleDir = glm::normalize(material->sample(dummy, normal));
-        glm::vec3 sampleBsdf = material->eval(ray.direction, sampleDir, normal);
-        float samplePdf = material->pdf(ray.direction, sampleDir, normal);
-        // if (sample.type == BSDFSampleType::Invalid) {
-        //     // Terminate path if sampling fails
-        //     break;
-        // }
-        if (samplePdf < 1e-8f) {
+        if (sample.type == BSDFSampleType::Invalid) {
+            // Terminate path if sampling fails
+            break;
+        } else if (sample.pdf < Epsilon8) {
             break;
         }
+        bool deltaSample = (sample.type & BSDFSampleType::Specular);
+        throughput *= sample.bsdf / sample.pdf *
+                      (deltaSample ? 1.f : Math::absDot(intersec.normal, sample.dir));
 
-        // bool deltaSample = (sample.type & Specular);
-        bool deltaSample = false;
-        throughput *= sampleBsdf / samplePdf *
-            (deltaSample ? 1.f : Math::absDot(normal, sampleDir));
-
-        ray = Ray(intersec.coords, sampleDir, kEpsilon);
+        ray = Ray(intersec.coords + sample.dir * Epsilon5, sample.dir);
+        // ray = makeOffsetedRay(intersec.coords, sample.dir);
 
         glm::vec3 curPos = intersec.coords;
         intersec = Scene::intersect(ray);
+        wo = -ray.direction;
+
         if (!intersec.happened) {
+            // if (scene->envMap != nullptr) {
+            //     glm::vec3 radiance = scene->envMap->linearSample(Math::toPlane(ray.direction)) * throughput;
+            //     float weight = deltaSample ? 1.f : Math::powerHeuristic(sample.pdf, scene->environmentMapPdf(ray.direction));
+            //     accRadiance += radiance * weight;
+            // }
             break;
         }
+        // TODO sample textured material
+        material = intersec.m; // material = scene->getTexturedMaterialAndSurface(intersec);
 
-        wo = -ray.direction;
-        normal = intersec.normal;
-        material = intersec.m;
-        mateiralType = material->getType();
+        if (material.type == Material::Type::Light) {
+#if SCENE_LIGHT_SINGLE_SIDED
+            if (glm::dot(intersec.normal, ray.direction) < 0.f) {
+                break;
+            }
+#endif
+            glm::vec3 radiance = material.baseColor;
 
-        // hit light
-        if (material->hasEmission()) {
-            glm::vec3 radiance = material->getEmission();
+            float lightPdf = Math::pdfAreaToSolidAngle(intersec.obj->getArea() / Scene::lightAreaSum(), curPos, intersec.coords, intersec.normal);
 
-            // float lightPdf = Math::pdfAreaToSolidAngle(
-            //     Math::luminance(radiance) * 2.f * glm::pi<float>() * scene->getPrimitiveArea(intersec.primId) * scene->sumLightPowerInv,
-            //     curPos, intersec.pos, intersec.norm
-            // );
-            float lightPdf;
-            sampleLight(intersec, lightPdf);
-
-            float weight = deltaSample ? 1.f : Math::powerHeuristic(samplePdf, lightPdf);
+            float weight = deltaSample ? 1.f : Math::powerHeuristic(sample.pdf, lightPdf);
             accRadiance += radiance * throughput * weight;
             break;
         }

@@ -46,10 +46,10 @@ public:
     glm::vec3 t0, t1, t2; // texture coords
     glm::vec3 normal;
     float area = -1;
-    Material* material = nullptr;
+    Material material;
 
     FUNC_QUALIFIER inline Triangle() {}
-    FUNC_QUALIFIER inline Triangle(glm::vec3 _v0, glm::vec3 _v1, glm::vec3 _v2, Material* _m = nullptr)
+    FUNC_QUALIFIER inline Triangle(glm::vec3 _v0, glm::vec3 _v1, glm::vec3 _v2, Material& _m)
         : v0(_v0), v1(_v1), v2(_v2), material(_m)
     {
         e1 = v1 - v0;
@@ -82,9 +82,6 @@ public:
     FUNC_QUALIFIER inline float getArea() override {
         return area;
     }
-    FUNC_QUALIFIER inline bool hasEmit() override {
-        return material->hasEmission();
-    }
 
     CUDA_PORTABLE(Triangle);
 };
@@ -92,7 +89,7 @@ public:
 class MeshTriangle : public Object
 {
 public:
-    MeshTriangle(const std::string& filename, Material* mt = new Material());
+    MeshTriangle(const std::string& filename, Material& mt);
     ~MeshTriangle();
 
     FUNC_QUALIFIER inline bool intersect(const Ray& ray) override { return true; }
@@ -157,13 +154,10 @@ public:
     // Sample a point on the surface of the object, used for area light
     FUNC_QUALIFIER inline void Sample(Intersection& pos, float& pdf) override {
         bvh->Sample(pos, pdf);
-        pos.emit = material->getEmission();
+        pos.emit = material.baseColor;
     }
     FUNC_QUALIFIER inline float getArea() override {
         return area;
-    }
-    FUNC_QUALIFIER inline bool hasEmit() override {
-        return material->hasEmission();
     }
 
     Bounds3 bounding_box;
@@ -180,7 +174,7 @@ public:
     BVHAccel* bvh;
     float area;
 
-    Material* material;
+    Material material;
 
     CUDA_PORTABLE(MeshTriangle);
 };
@@ -203,7 +197,7 @@ FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
     double u, v, t_tmp = 0;
     glm::vec3 pvec = glm::cross(ray.direction, e2);
     double det = glm::dot(e1, pvec);
-    if (fabs(det) < Epsilon)
+    if (fabs(det) < Epsilon5)
         return inter;
 
     double det_inv = 1. / det;
