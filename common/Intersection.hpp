@@ -4,28 +4,30 @@
 
 #ifndef RAYTRACING_INTERSECTION_H
 #define RAYTRACING_INTERSECTION_H
-#include "Vector.hpp"
 #include "Material.hpp"
+#include "CudaPortable.hpp"
+#include "MathUtils.hpp"
+
 class Object;
-class Sphere;
+// class Sphere;
 
 struct Intersection
 {
-    Intersection(){
-        happened=false;
-        coords=Vector3f();
-        normal=Vector3f();
-        distance= std::numeric_limits<double>::max();
-        obj =nullptr;
-        m=nullptr;
+    FUNC_QUALIFIER inline Intersection()
+    {
+        happened = false;
+        coords = glm::vec3();
+        normal = glm::vec3();
+        distance = kDoubleInfinity;
+        // obj = nullptr;
     }
     bool happened;
-    Vector3f coords;
-    Vector3f tcoords;
-    Vector3f normal;
-    Vector3f emit;
+    glm::vec3 coords;
+    glm::vec3 tcoords;
+    glm::vec3 normal;
+    glm::vec3 emit;
     double distance;
-    Object* obj;
-    Material* m;
+    float triangleArea;
+    Material m;
 };
-#endif //RAYTRACING_INTERSECTION_H
+#endif // RAYTRACING_INTERSECTION_H
