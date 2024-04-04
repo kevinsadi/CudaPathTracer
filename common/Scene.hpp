@@ -151,9 +151,11 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
     Material &material = intersec.m; // scene->getTexturedMaterialAndSurface(intersec);
     // hit a light, return light color
     if (material.type == Material::Type::Light) {
-        if (glm::dot(intersec.normal, ray.direction) > 0.f) {
+        // ! > or < depends on the normal direction
+        // TODO need to tweak light normal in obj file
+        // if (glm::dot(intersec.normal, ray.direction) < 0.f) {
             accRadiance = material.baseColor;
-        }
+        // }
         return accRadiance;
     }
     glm::vec3 throughput(1.f);
@@ -162,8 +164,7 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
     for (int depth = 1; depth <= this->maxDepth; depth++) {
         bool deltaBSDF = (material.type == Material::Type::Dielectric);
 
-        if (material.type != Material::Type::Dielectric &&
-            glm::dot(intersec.normal, wo) < 0.f) {
+        if (material.type != Material::Type::Dielectric && glm::dot(intersec.normal, wo) < 0.f) {
             intersec.normal = -intersec.normal;
         }
 
@@ -174,12 +175,15 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
             Intersection lightSample;
             float lightPdf;
             sampleLight(lightSample, lightPdf);
-            // float lightPdf = scene->sampleDirectLight(intersec.pos, sample4D(rng),
-            // radiance, wi);
+            // float lightPdf = scene->sampleDirectLight(intersec.pos, sample4D(rng), radiance, wi);
             radiance = lightSample.emit;
             wi = glm::normalize(lightSample.coords - intersec.coords);
 
-            if (lightPdf > 0) {
+            // check light blockage
+            ray = Ray(intersec.coords + wi * Epsilon5, wi);
+            Intersection shadowIntersec = Scene::intersect(ray);
+
+            if (lightPdf > 0.f && shadowIntersec.distance - glm::length(lightSample.coords - intersec.coords) > -Epsilon5) {
                 float BSDFPdf = material.pdf(intersec.normal, wo, wi);
                 accRadiance += throughput * material.BSDF(intersec.normal, wo, wi) *
                                radiance * Math::satDot(intersec.normal, wi) / lightPdf *
@@ -220,7 +224,9 @@ glm::vec3 Scene::castRay(const Ray &eyeRay) const {
 
         if (material.type == Material::Type::Light) {
 #if SCENE_LIGHT_SINGLE_SIDED
-            if (glm::dot(intersec.normal, ray.direction) < 0.f) {
+            // ! > or < depends on the normal direction
+            // TODO need to tweak light normal in obj file
+            if (glm::dot(intersec.normal, ray.direction) > 0.f) {
                 break;
             }
 #endif
