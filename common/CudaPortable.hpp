@@ -10,7 +10,7 @@
     void FreeCuda() const;
 #define FUNC_QUALIFIER inline __device__ __host__
 #else
-#define FUNC_QUALIFIER inline 
+#define FUNC_QUALIFIER 
 #define CUDA_PORTABLE(CLASS_NAME) 
 #endif
 
