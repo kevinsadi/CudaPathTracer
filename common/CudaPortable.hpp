@@ -8,9 +8,9 @@
 #define CUDA_PORTABLE(CLASS_NAME) \
     void MallocCuda(CLASS_NAME*& device_ptr) const;\
     void FreeCuda() const;
-#define FUNC_QUALIFIER inline __device__ __host__
+#define FUNC_QUALIFIER __device__ __host__
 #else
-#define FUNC_QUALIFIER inline 
+#define FUNC_QUALIFIER  
 #define CUDA_PORTABLE(CLASS_NAME) 
 #endif
 

@@ -7,6 +7,10 @@ if (${CMAKE_SYSTEM_NAME} MATCHES "Darwin")
 
     # Add the compile flag -fopenmp
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O3")
+elseif (${CMAKE_SYSTEM_NAME} MATCHES "Linux")
+    find_package(OpenMP REQUIRED)
+    # Add the compile flag -fopenmp
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fopenmp -O3")
 else()
     find_package(OpenMP REQUIRED)
     # on windows we use cl.exe

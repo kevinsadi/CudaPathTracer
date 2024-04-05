@@ -100,7 +100,7 @@ FUNC_QUALIFIER static glm::vec3 GTR2Sample(glm::vec3 n, glm::vec3 wo, float alph
     glm::vec3 vh = glm::normalize((transInv * wo) * glm::vec3(alpha, alpha, 1.f));
 
     float lenSq = vh.x * vh.x + vh.y * vh.y;
-    glm::vec3 t = lenSq > 0.f ? glm::vec3(-vh.y, vh.x, 0.f) / sqrt(lenSq) : glm::vec3(1.f, 0.f, 0.f);
+    glm::vec3 t = lenSq > 0.f ? glm::vec3(-vh.y, vh.x, 0.f) / glm::sqrt(lenSq) : glm::vec3(1.f, 0.f, 0.f);
     glm::vec3 b = glm::cross(vh, t);
 
     glm::vec2 p = Math::toConcentricDisk(r.x, r.y);
