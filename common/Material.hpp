@@ -262,7 +262,7 @@ struct Material {
             case Material::Type::Lambertian: {
                 float x_1 = r.x, x_2 = r.y;
                 float z = std::fabs(1.0f - 2.0f * x_1);
-                float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+                float r = std::sqrt(1.0f - z * z), phi = 2 * Pi * x_2;
                 glm::vec3 localRay(r*std::cos(phi), r*std::sin(phi), z);
                 wo = Math::toWorld(localRay, N);
                 break;
