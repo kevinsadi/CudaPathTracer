@@ -255,6 +255,31 @@ struct Material {
             sample.type = Invalid;
         }
     }
+    // 
+    FUNC_QUALIFIER glm::vec3 sample(const glm::vec3 &wi, const glm::vec3 &N, glm::vec2 r){
+        glm::vec3 wo;
+        switch (type) {
+            case Material::Type::Lambertian: {
+                float x_1 = r.x, x_2 = r.y;
+                float z = std::fabs(1.0f - 2.0f * x_1);
+                float r = std::sqrt(1.0f - z * z), phi = 2 * M_PI * x_2;
+                glm::vec3 localRay(r*std::cos(phi), r*std::sin(phi), z);
+                wo = Math::toWorld(localRay, N);
+                break;
+            }
+
+            case Material::Type::MetallicWorkflow: {
+                wo = glm::vec3(0.f);
+                break;
+            }
+
+            case Material::Type::Dielectric: {
+                wo = glm::vec3(0.f);
+                break;
+            }
+        }
+        return wo;
+    }
 
     int type = Type::Lambertian;
     glm::vec3 baseColor = glm::vec3(.9f);

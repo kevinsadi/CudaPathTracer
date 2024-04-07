@@ -69,6 +69,7 @@ struct RNG
 #define PiInv 1.f / Pi
 #define Epsilon5 1e-5f
 #define Epsilon8 1e-8f
+#define Epsilon4 (5 * 1e-4f)
 
 #define kDoubleInfinity 1e30f
 #define kDoubleNegInfinity -kDoubleInfinity
@@ -272,5 +273,19 @@ namespace Math
     {
         glm::vec3 yx = x - y;
         return pdf * glm::dot(yx, yx) / absDot(ny, glm::normalize(yx));
+    }
+
+    FUNC_QUALIFIER inline glm::vec3 toWorld(const glm::vec3 &a, const glm::vec3 &N){
+        glm::vec3 B, C;
+        if (std::fabs(N.x) > std::fabs(N.y)){
+            float invLen = 1.0f / std::sqrt(N.x * N.x + N.z * N.z);
+            C = glm::vec3(N.z * invLen, 0.0f, -N.x *invLen);
+        }
+        else {
+            float invLen = 1.0f / std::sqrt(N.y * N.y + N.z * N.z);
+            C = glm::vec3(0.0f, N.z * invLen, -N.y *invLen);
+        }
+        B = glm::cross(C, N);
+        return a.x * B + a.y * C + a.z * N;
     }
 }
