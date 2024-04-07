@@ -255,8 +255,8 @@ struct Material {
             sample.type = Invalid;
         }
     }
-    // 
-    FUNC_QUALIFIER glm::vec3 sample(const glm::vec3 &wi, const glm::vec3 &N, glm::vec2 r){
+    // ! not in use yet
+    FUNC_QUALIFIER glm::vec3 sample(const glm::vec3 &wi, const glm::vec3 &N, glm::vec3 r){
         glm::vec3 wo;
         switch (type) {
             case Material::Type::Lambertian: {
@@ -269,7 +269,12 @@ struct Material {
             }
 
             case Material::Type::MetallicWorkflow: {
-                wo = glm::vec3(0.f);
+                BSDFSample bSample;
+                sample(wi, N, r, bSample);
+                if (bSample.type == BSDFSampleType::Invalid) {
+                    wo = glm::vec3(0.f);
+                }
+                else wo = bSample.dir;
                 break;
             }
 

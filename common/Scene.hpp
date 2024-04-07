@@ -159,52 +159,18 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
         }
 
         // indirect lighting 
-        glm::vec3 wo = -ray.direction;
-        glm::vec3 wi = material.sample(wo, intersec.normal, rng.sample2D());
-        glm::vec3 p = intersec.coords;
-        glm::vec3 f_r = material.BSDF(intersec.normal, wo, wi);
-        float indirectPdf = material.pdf(intersec.normal, wo, wi);
-        float cos_theta = Math::absDot(intersec.normal, wi);
-
-        if (indirectPdf < Epsilon5) {
-            break;
-        }
-
-        throughput *= f_r * cos_theta / indirectPdf;
-        ray = Ray(p + wi * Epsilon5, wi);
-        intersec = Scene::intersect(ray);
-        material = intersec.m;
-
-        if (!intersec.happened) {
-            // sample envmap
-            break;
-        }
-        // if it is light again
-        if (material.type == Material::Type::Light) {
-            break;
-        }
-
-        // BSDFSample sample;
-        // material.sample(intersec.normal, -ray.direction, rng.sample3D(), sample);
-        // glm::vec3 p = intersec.coords;
         // glm::vec3 wo = -ray.direction;
-        // glm::vec3 wi = sample.dir;
-        // glm::vec3 f_r = sample.bsdf;
-        // float indirectPdf = sample.pdf;
+        // glm::vec3 wi = material.sample(wo, intersec.normal, rng.sample3D());
+        // glm::vec3 p = intersec.coords;
+        // glm::vec3 f_r = material.BSDF(intersec.normal, wo, wi);
+        // float indirectPdf = material.pdf(intersec.normal, wo, wi);
         // float cos_theta = Math::absDot(intersec.normal, wi);
 
-        // if (sample.type == BSDFSampleType::Invalid) {
-        //     // Terminate path if sampling fails
-        //     break;
-        // }
-        // else if (sample.pdf < Epsilon8) {
+        // if (indirectPdf < Epsilon5) {
         //     break;
         // }
 
-        // bool deltaSample = (sample.type & BSDFSampleType::Specular); // ? why this
-        // throughput *= f_r / indirectPdf * (deltaSample ? 1.f : cos_theta);
-
-        // // new ray, new intersection, new material
+        // throughput *= f_r * cos_theta / indirectPdf;
         // ray = Ray(p + wi * Epsilon5, wi);
         // intersec = Scene::intersect(ray);
         // material = intersec.m;
@@ -215,11 +181,48 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
         // }
         // // if it is light again
         // if (material.type == Material::Type::Light) {
-        //     float lightPdf = Math::pdfAreaToSolidAngle(intersec.triangleArea / Scene::lightAreaSum(), p, intersec.coords, intersec.normal);
-        //     float weight = deltaSample ? 1.f : Math::powerHeuristic(indirectPdf, lightPdf);
-        //     accRadiance += throughput * intersec.emit * weight;
         //     break;
         // }
+
+        glm::vec3 wo = -ray.direction;
+        glm::vec3 p = intersec.coords;
+        BSDFSample sample;
+        material.sample(intersec.normal, wo, rng.sample3D(), sample);
+        glm::vec3 wi = sample.dir;
+        glm::vec3 f_r = sample.bsdf;
+        float cos_theta = Math::absDot(intersec.normal, wi);
+
+        if (sample.type == BSDFSampleType::Invalid) {
+            // Terminate path if sampling fails
+            break;
+        }
+        else if (sample.pdf < Epsilon8) {
+            break;
+        }
+
+        bool deltaSample = (sample.type & BSDFSampleType::Specular); // ? why this
+        throughput *= f_r / sample.pdf * (deltaSample ? 1.f : cos_theta);
+
+        // new ray, new intersection, new material
+        ray = Ray(p + wi * Epsilon5, wi);
+        intersec = Scene::intersect(ray);
+        material = intersec.m;
+
+        if (!intersec.happened) {
+            // sample envmap
+            break;
+        }
+        // if it is light again
+        if (material.type == Material::Type::Light) {
+            // float lightPdf = Math::pdfAreaToSolidAngle(intersec.triangleArea / Scene::lightAreaSum(), p, intersec.coords, intersec.normal);
+            // float weight = deltaSample ? 1.f : Math::powerHeuristic(indirectPdf, lightPdf);
+            // accRadiance += throughput * intersec.emit * weight;
+            break;
+        }
     }
+    if (isnan(accRadiance.x) || isnan(accRadiance.y) || isnan(accRadiance.z) ||
+		isinf(accRadiance.x) || isinf(accRadiance.y) || isinf(accRadiance.z)) {
+		return glm::vec3(0.f);
+	}
     return accRadiance;
 }
