@@ -1,13 +1,14 @@
 #pragma once
 
+#include "CudaPortable.hpp"
 #include "MathUtils.hpp"
 
-FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3 &ray_in_dir, const glm::vec3 &normal) {
+FUNC_QUALIFIER static inline glm::vec3 reflect(const glm::vec3 &ray_in_dir, const glm::vec3 &normal) {
     return ray_in_dir - glm::dot(ray_in_dir, normal) * normal * 2.f;
 }
 // If the ray is outside, make cos_i positive.
 // If the ray is inside, invert the refractive indices and negate the normal.
-FUNC_QUALIFIER inline glm::vec3 refract(const glm::vec3 &ray_in_dir, const glm::vec3 &normal, float ior) {
+FUNC_QUALIFIER static inline glm::vec3 refract(const glm::vec3 &ray_in_dir, const glm::vec3 &normal, float ior) {
     auto cos_i = clamp(-1.0f, 1.0f, glm::dot(ray_in_dir, normal));
     auto eta_i = 1.0f;
     auto eta_t = ior;
@@ -23,7 +24,7 @@ FUNC_QUALIFIER inline glm::vec3 refract(const glm::vec3 &ray_in_dir, const glm::
     const auto k = 1.0f - eta * eta * (1.0f - cos_i * cos_i);
     return k < 0.0f ? glm::vec3(0.0f) : glm::normalize(eta * ray_in_dir + (eta * cos_i - glm::sqrt(k)) * correct_normal);
 }
-FUNC_QUALIFIER inline float fresnel(const glm::vec3 &observation_dir, const glm::vec3 &normal, float ior) {
+FUNC_QUALIFIER static inline float fresnel(const glm::vec3 &observation_dir, const glm::vec3 &normal, float ior) {
     auto cos_i = clamp(-1.0f, 1.0f, glm::dot(observation_dir, normal));
     auto eta_i = 1.0f;
     auto eta_t = ior;
