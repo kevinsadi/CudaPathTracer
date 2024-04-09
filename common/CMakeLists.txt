@@ -20,6 +20,5 @@ set(COMMON_SOURCES
     ${PROJECT_SOURCE_DIR}/common/Utility.cpp
     ${PROJECT_SOURCE_DIR}/common/Utility.hpp
     ${PROJECT_SOURCE_DIR}/common/MathUtils.hpp
-    ${PROJECT_SOURCE_DIR}/common/MathUtils.cpp
     CACHE INTERNAL ""
 )

@@ -11,7 +11,7 @@
 // function().
 int main(int argc, char** argv) {
     int spp = 32;
-    int maxDepth = 32;
+    int maxDepth = 8;
     // read SPP & maxDepth from command line
     if (argc > 1)
         spp = atoi(argv[1]);

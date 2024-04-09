@@ -32,30 +32,28 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         scene.camPos = glm::vec3(278, 273, -800);
 
         Material red;
-        red.baseColor = glm::vec3(0.63f, 0.065f, 0.05f);
-        red.ior = 0.f;
+        red._albedo = glm::vec3(0.63f, 0.065f, 0.05f);
         Material green;
-        green.baseColor = glm::vec3(0.14f, 0.45f, 0.091f);
-        green.ior = 0.f;
+        green._albedo = glm::vec3(0.14f, 0.45f, 0.091f);
         Material white;
-        white.baseColor = glm::vec3(0.725f, 0.71f, 0.68f);
-        white.ior = 0.f;
+        white._albedo = glm::vec3(0.725f, 0.71f, 0.68f);
         Material light;
-        light.type = Material::Type::Light;
-        light.baseColor = (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f));
-        light.ior = 0.f;
-
-        // Test MatallicWorkflow
+        light._emission = (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f));
+        
         Material metal;
         metal.type = Material::Type::MetallicWorkflow;
-        metal.baseColor = glm::vec3(0.7, 0.5, 0.2);
-        metal.metallic = 0.800000;
-        metal.roughness = 0.20000;
-        metal.ior = 0.f;
+        metal._albedo = glm::vec3(0.7, 0.5, 0.2);
+        metal._metallic = 1.f;
+        metal._roughness = 0.0050;
 
-        
+        Material glass;
+        glass.type = Material::Type::Glass;
+        glass._roughness = 0.002f;
+        glass._ior = 1.5f;
+
+
         auto floor = new MeshTriangle("models/cornellbox/floor.obj", white);
-        auto shortbox = new MeshTriangle("models/cornellbox/shortbox.obj", white);
+        auto shortbox = new MeshTriangle("models/cornellbox/shortbox.obj", glass);
         auto tallbox = new MeshTriangle("models/cornellbox/tallbox.obj", metal);
         auto left = new MeshTriangle("models/cornellbox/left.obj", red);
         auto right = new MeshTriangle("models/cornellbox/right.obj", green);
