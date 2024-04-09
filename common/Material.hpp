@@ -62,7 +62,7 @@ namespace Microfacet {
     FUNC_QUALIFIER inline glm::vec3 sample_micro_surface(const glm::vec3 &r, const glm::vec3 &normal, float roughness_sq) {
         const auto r0 = r.x;
         const auto r1 = r.y;
-        const auto theta = std::acosf(std::sqrtf((1.0f - r0) / ((roughness_sq - 1.0f) * r0 + 1.0f)));
+        const auto theta = glm::acos(glm::sqrt((1.0f - r0) / ((roughness_sq - 1.0f) * r0 + 1.0f)));
         const auto phi = 2 * Pi * r1;
 
         const auto local_micro_surface_normal = Math::polar_to_cartesian(theta, phi);

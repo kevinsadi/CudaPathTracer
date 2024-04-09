@@ -121,7 +121,7 @@ namespace Math {
     FUNC_QUALIFIER inline glm::vec3 local_to_world(const glm::vec3 &local_dir, const glm::vec3 &normal) {
         glm::vec3 t;
         if (glm::abs(normal.x) > glm::abs(normal.y)) {
-            const auto inv_len = 1.0f / std::sqrt(normal.x * normal.x + normal.z * normal.z);
+            const auto inv_len = 1.0f / glm::sqrt(normal.x * normal.x + normal.z * normal.z);
             t = {normal.z * inv_len, 0.0f, -normal.x * inv_len};
         } else {
             const auto inv_len = 1.0f / glm::sqrt(normal.y * normal.y + normal.z * normal.z);
