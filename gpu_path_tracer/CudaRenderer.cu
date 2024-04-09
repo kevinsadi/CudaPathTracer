@@ -20,15 +20,14 @@ __global__ void SingleKernelRayTracing(Scene* scene_gpu, glm::vec3* framebuffer,
 
     int i = tid % scene_gpu->width;
     int j = tid / scene_gpu->width;
-    for (int k = 0; k < 32; k++) {
+    for (int k = 0; k < spp; k++) {
         // jitter sampling for anti-aliasing
         RNG rng = RNG(k, tid, 0, nullptr);
         float bias = rng.sample1D();
         float x = (2 * (i + bias) / (float)scene_gpu->width - 1) * imageAspectRatio * scale;
         float y = (1 - 2 * (j + bias) / (float)scene_gpu->height) * scale;
         glm::vec3 dir = normalize(glm::vec3(-x, y, 1));
-        framebuffer[tid] += scene_gpu->castRay(rng, Ray(eye_pos, dir)) / (spp*1.0f);
-        // framebuffer[tid] += glm::vec3(0.0f);
+        framebuffer[tid] += scene_gpu->castRay(rng, Ray(eye_pos, dir)) / (spp * 1.0f);
     }
 }
 
