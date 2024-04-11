@@ -60,9 +60,12 @@ namespace Microfacet {
         return 2.0f / Math::lerp(glm::abs(2 * normal_dot_light_source_dir * normal_dot_observer_dir), glm::abs(normal_dot_light_source_dir + normal_dot_observer_dir), roughness);
     }
 
-    FUNC_QUALIFIER inline glm::vec3 sample_micro_surface(const glm::vec3 &r, const glm::vec3 &normal, float roughness_sq) {
-        const auto r0 = r.x;
-        const auto r1 = r.y;
+    // GGX NDF Sampling
+    // https://www.tobias-franke.eu/log/2014/03/30/notes_on_importance_sampling.html
+    // https://agraphicsguynotes.com/posts/sample_microfacet_brdf/
+    FUNC_QUALIFIER inline glm::vec3 sample_micro_surface(RNG& rng, const glm::vec3 &normal, float roughness_sq) {
+        const auto r0 = rng.sample1D();
+        const auto r1 = rng.sample1D();
         const auto theta = glm::acos(glm::sqrt((1.0f - r0) / ((roughness_sq - 1.0f) * r0 + 1.0f)));
         const auto phi = 2 * Pi * r1;
 
@@ -127,36 +130,37 @@ struct Material {
     }
 
     // Given the direction of the observer, calculate a random ray source direction.
-    FUNC_QUALIFIER glm::vec3 sample(const glm::vec3 &r, const glm::vec3 &ray_out_dir, const glm::vec3 &normal) {
+    FUNC_QUALIFIER glm::vec3 sample(RNG& rng, const glm::vec3 &ray_out_dir, const glm::vec3 &normal) {
         switch (type) {
         case Type::Lambertian: {
             // uniformly sample the hemisphere
-            const auto x1 = r.x;
-            const auto x2 = r.y;
-            const auto z = glm::abs(1.0f - 2.0f * x1);
-            const auto r = glm::sqrt(1.0f - z * z);
-            const auto phi = 2 * Pi * x2;
+            const auto phi = 2 * Pi * rng.sample1D(); // [0, 2pi]
+            const auto theta = 0.5 * Pi * rng.sample1D(); // [0, pi/2]
 
             // get local direction of the ray out
-            const glm::vec3 local_ray_out_dir(r * glm::cos(phi), r * glm::sin(phi), z);
+            const glm::vec3 local_ray_out_dir = Math::polar_to_cartesian(theta, phi);
 
             // transform to the world space
             return Math::local_to_world(local_ray_out_dir, normal);
         }
         case Type::MetallicWorkflow: {
-            const auto micro_surface_normal = Microfacet::sample_micro_surface(r, normal, Math::square(_roughness));
+            // another importance sampling method.
+            // since Normal Distribution Function dominates the shape of the micro surface,
+            // we first sample normal and generate correspond ray direction, which would contributes
+            // more to the final radiance than a ray with random direction.
+            const auto micro_surface_normal = Microfacet::sample_micro_surface(rng, normal, Math::square(_roughness));
             const auto observation_dir = -ray_out_dir;
             return reflect(observation_dir, micro_surface_normal); // trace back
         }
         case Type::Glass: {
             // randomly choose a micro surface
-            const auto micro_surface_normal = Microfacet::sample_micro_surface(r, normal, Math::square(_roughness));
+            const auto micro_surface_normal = Microfacet::sample_micro_surface(rng, normal, Math::square(_roughness));
             const auto observation_dir = -ray_out_dir;
 
             const auto f = fresnel(observation_dir, micro_surface_normal, _ior);
 
             // trace back
-            if (r.z < f) {
+            if (rng.sample1D() < f) {
                 // reflection
                 return reflect(observation_dir, micro_surface_normal);
             } else {
@@ -229,12 +233,13 @@ struct Material {
     }
     // Given the directions of the ray source and ray out and a normal vector,
     // calculate its contribution from BSDF (bidirectional scattering distribution function).
-    FUNC_QUALIFIER glm::vec3 fr(const glm::vec3 &ray_source_dir, const glm::vec3 &ray_out_dir, const glm::vec3 &normal) {
+    FUNC_QUALIFIER glm::vec3 bsdf(const glm::vec3 &ray_source_dir, const glm::vec3 &ray_out_dir, const glm::vec3 &normal) {
         switch (type) {
         case Type::Lambertian: {
             return glm::dot(ray_out_dir, normal) > 0.0f ? _albedo * PiInv : glm::vec3(0.0f);
         }
         case Type::MetallicWorkflow: {
+            // GGX BRDF
             const auto check_ray_dir = glm::dot(normal, ray_source_dir) * glm::dot(normal, ray_out_dir);
             if (check_ray_dir <= 0.0f)
                 return glm::vec3(0.0f); // no refraction
@@ -259,7 +264,8 @@ struct Material {
             const auto specular = D * F * G / 4.0f;
 
             // BSDF
-            return diffuse + specular;
+            // return diffuse + specular;
+            return specular;
         }
         case Type::Glass: {
             const auto normal_dot_ray_source_dir = glm::dot(normal, ray_source_dir);

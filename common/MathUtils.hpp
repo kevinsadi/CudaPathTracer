@@ -118,6 +118,8 @@ namespace Math {
         return x >= min && x <= max;
     }
 
+    // given a local hemisphere direction, and a global normal corresponding to the Hemisphere axis
+    // return the world space direction
     FUNC_QUALIFIER inline glm::vec3 local_to_world(const glm::vec3 &local_dir, const glm::vec3 &normal) {
         glm::vec3 t;
         if (glm::abs(normal.x) > glm::abs(normal.y)) {

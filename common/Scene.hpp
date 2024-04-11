@@ -117,6 +117,11 @@ void Scene::sampleLight(RNG &rng, Intersection &pos, float &pdf) const {
 }
 
 glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
+    // 1. Monte Carlo Path Tracing: integration from all directions can be estimated 
+    // by averaging over radiance/pdf on each direction, I = 1/N * Σ(Li*bsdf*cos_theta/pdf)
+    // 2. since we are using iteration instead of recursion, we use a throughput to store the
+    // weight(bsdf*cos_theta/pdf) for an indirect ray
+    // reference: https://sites.cs.ucsb.edu/~lingqi/teaching/resources/GAMES101_Lecture_16.pdf, p43
     glm::vec3 accRadiance(0.f), throughput(1.f);
 
     Ray ray = eyeRay;
@@ -135,6 +140,8 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
     for (int depth = 1; depth <= this->maxDepth; depth++) {
         // direct lighting
         if (material.type != Material::Type::Glass) {
+            // importance sampling: instead of sampling all ray directions - sampling over all solid angles dw,
+            // which lead to many rays wasted, we sample over all light sources - sampling over all light areas dA
             Intersection lightSample;
             float lightPdf;
             sampleLight(rng, lightSample, lightPdf);
@@ -146,18 +153,19 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
             Intersection shadowIntersec = Scene::intersect(shadowRay);
             if (shadowIntersec.distance - glm::length(x - p) > -Epsilon4) {
                 glm::vec3 emit = lightSample.emit;
-                glm::vec3 f_r = material.fr(wi, wo, intersec.normal);
+                glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
                 float cos_theta = Math::satDot(intersec.normal, wi);
                 float cos_theta_prime = Math::satDot(lightSample.normal, -wi);
                 float r2 = glm::dot(x - p, x - p);
-                accRadiance += throughput * emit * f_r * cos_theta * cos_theta_prime / r2 / lightPdf;
+                // dw = dA * (cos_theta_prime / r2)
+                accRadiance += throughput * emit * bsdf * cos_theta * cos_theta_prime / r2 / lightPdf;
             }
         }
         // indirect lighting
         glm::vec3 wo = -ray.direction;
-        glm::vec3 wi = material.sample(rng.sample3D(), wo, intersec.normal);
+        glm::vec3 wi = material.sample(rng, wo, intersec.normal);
         glm::vec3 p = intersec.coords;
-        glm::vec3 f_r = material.fr(wi, wo, intersec.normal);
+        glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
         float indirectPdf = material.pdf(wi, wo, intersec.normal);
         float cos_theta = Math::absDot(intersec.normal, wi);
 
@@ -165,7 +173,7 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
             break;
         }
 
-        throughput *= f_r * cos_theta / indirectPdf;
+        throughput *= bsdf * cos_theta / indirectPdf;
         ray = Ray(p + wi * Epsilon5, wi);
         intersec = Scene::intersect(ray);
         material = intersec.m;
