@@ -83,6 +83,8 @@ public:
     };
     static Scene CreateBuiltinScene(BuiltinScene sceneId, int maxDepth);
 
+    Material GetTexturedMaterial(Intersection &intersection);
+
     CUDA_PORTABLE(Scene);
 };
 

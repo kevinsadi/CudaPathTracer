@@ -82,7 +82,7 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         white.ior = 0.f;
         const std::string woodTexture("textures/wood_floor_diff_4k.jpg");
         Image* image = new Image(woodTexture); 
-        //scene.mTextures.push_back(new Image(woodTexture));
+        scene.mTextures.push_back(new Image(woodTexture));
         white.baseColorMapId = 0;
         
         Material light;
@@ -115,3 +115,10 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
 }
 
 
+Material Scene::GetTexturedMaterial(Intersection &intersection) {
+    Material mat = intersection.m;
+    if (mat.baseColorMapId != NullTextureId) {
+        mat.baseColor = mTextures[mat.baseColorMapId]->linearSample(intersection.uv);
+    }
+    return mat;
+}

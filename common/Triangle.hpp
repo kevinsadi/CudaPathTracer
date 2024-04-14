@@ -192,8 +192,9 @@ FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
     inter.normal = normal;
     inter.distance = t_tmp;
     inter.triangleArea = area;
-    inter.m = this->material;
     inter.uv = (float)w * this->t0 + (float)u * this->t1 + (float)v * this->t2;
+    inter.m = this->material;
+
 
     return inter;
 }
