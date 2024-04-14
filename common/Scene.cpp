@@ -72,12 +72,17 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         Material red;
         red.baseColor = glm::vec3(0.63f, 0.065f, 0.05f);
         red.ior = 0.f;
+
         Material green;
         green.baseColor = glm::vec3(0.14f, 0.45f, 0.091f);
         green.ior = 0.f;
+
         Material white;
         white.baseColor = glm::vec3(0.725f, 0.71f, 0.68f);
         white.ior = 0.f;
+        const std::string woodTexture("textures/wood_floor_diff_4k.jpg");
+        Image* image = new Image(woodTexture); 
+        //scene.mTextures.push_back(new Image(woodTexture));
         white.baseColorMapId = 0;
         
         Material light;

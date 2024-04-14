@@ -10,9 +10,12 @@
 #include "Ray.hpp"
 #include "Settings.hpp"
 #include "Triangle.hpp"
+#include "Image.hpp"
+
 #include <string>
 #include <vector>
 #include <unordered_map>
+
 
 class Scene {
 public:
@@ -27,7 +30,7 @@ public:
     int maxDepth = 1;
     float RussianRoulette = 0.8;
     BVHAccel* bvh = nullptr;
-    //std::vector<Image*> textures;
+    std::vector<Image*> mTextures;
     // -----------Editor Only-----------
     // [!] as polymorphic is not supported in CUDA, currently we only allow MeshTriangle
     std::vector<MeshTriangle*> meshes;
