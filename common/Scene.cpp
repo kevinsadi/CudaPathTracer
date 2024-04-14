@@ -7,7 +7,7 @@
 #include "MathUtils.hpp"
 
 void Scene::buildBVH() {
-    printf(" - Generating BVH...\n\n");
+    // printf(" - Generating BVH...\n\n");
     std::vector<Object*> objects;
     for (auto& mesh : meshes) {
         objects.push_back(mesh);

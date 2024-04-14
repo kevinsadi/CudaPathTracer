@@ -21,7 +21,8 @@ using Distribution = std::uniform_real_distribution<float>;
 
 struct RNG {
     Sampler sampler;
-    FUNC_QUALIFIER inline RNG(int iter, int index, int dim, uint32_t *data) {
+    FUNC_QUALIFIER inline RNG() {}
+    FUNC_QUALIFIER inline RNG(int iter, int index, int dim, uint32_t* data) {
         int h = utilhash((1 << 31) | (dim << 22) | iter) ^ utilhash(index);
         sampler = Sampler(h);
     }
@@ -72,17 +73,17 @@ struct RNG {
 #define kFloatInfinity 3.402823466e+38F
 #define kFloatNegInfinity -kFloatInfinity
 
-FUNC_QUALIFIER inline void swap(float &a, float &b) {
+FUNC_QUALIFIER inline void swap(float& a, float& b) {
     float temp = a;
     a = b;
     b = temp;
 }
 
-FUNC_QUALIFIER inline float clamp(const float &lo, const float &hi, const float &v) {
+FUNC_QUALIFIER inline float clamp(const float& lo, const float& hi, const float& v) {
     return glm::max(lo, glm::min(hi, v));
 }
 
-FUNC_QUALIFIER inline bool solveQuadratic(const float &a, const float &b, const float &c, float &x0, float &x1) {
+FUNC_QUALIFIER inline bool solveQuadratic(const float& a, const float& b, const float& c, float& x0, float& x1) {
     float discr = b * b - 4 * a * c;
     if (discr < 0)
         return false;
@@ -98,7 +99,7 @@ FUNC_QUALIFIER inline bool solveQuadratic(const float &a, const float &b, const 
     return true;
 }
 
-static std::string vec3ToString(const glm::vec3 &vec) {
+static std::string vec3ToString(const glm::vec3& vec) {
     std::stringstream ss;
     ss << "{ x = " << vec.x << ", y = " << vec.y << ", z = " << vec.z << " }";
     return ss.str();
@@ -114,20 +115,21 @@ namespace Math {
         return translationMat * rotationMat * scaleMat;
     }
     template <typename T>
-    FUNC_QUALIFIER inline bool between(const T &x, const T &min, const T &max) {
+    FUNC_QUALIFIER inline bool between(const T& x, const T& min, const T& max) {
         return x >= min && x <= max;
     }
 
     // given a local hemisphere direction, and a global normal corresponding to the Hemisphere axis
     // return the world space direction
-    FUNC_QUALIFIER inline glm::vec3 local_to_world(const glm::vec3 &local_dir, const glm::vec3 &normal) {
+    FUNC_QUALIFIER inline glm::vec3 local_to_world(const glm::vec3& local_dir, const glm::vec3& normal) {
         glm::vec3 t;
         if (glm::abs(normal.x) > glm::abs(normal.y)) {
             const auto inv_len = 1.0f / glm::sqrt(normal.x * normal.x + normal.z * normal.z);
-            t = {normal.z * inv_len, 0.0f, -normal.x * inv_len};
-        } else {
+            t = { normal.z * inv_len, 0.0f, -normal.x * inv_len };
+        }
+        else {
             const auto inv_len = 1.0f / glm::sqrt(normal.y * normal.y + normal.z * normal.z);
-            t = {0.0f, normal.z * inv_len, -normal.y * inv_len};
+            t = { 0.0f, normal.z * inv_len, -normal.y * inv_len };
         }
         const auto b = glm::cross(t, normal);
         return local_dir.x * b + local_dir.y * t + local_dir.z * normal;
@@ -137,7 +139,7 @@ namespace Math {
         return {
             glm::sin(theta) * glm::cos(phi),
             glm::sin(theta) * glm::sin(phi),
-            glm::cos(theta)};
+            glm::cos(theta) };
     }
 
     FUNC_QUALIFIER inline float pow5(float x) {
@@ -148,10 +150,10 @@ namespace Math {
     FUNC_QUALIFIER inline float lerp(float x, float y, float t) {
         return x * (1.0f - t) + y * t;
     }
-    FUNC_QUALIFIER inline glm::vec3 lerp(const glm::vec3 &a, const glm::vec3 &b, float t) {
+    FUNC_QUALIFIER inline glm::vec3 lerp(const glm::vec3& a, const glm::vec3& b, float t) {
         return a * (1.0f - t) + b * t;
     }
-    FUNC_QUALIFIER inline float length2(const glm::vec3 &v) {
+    FUNC_QUALIFIER inline float length2(const glm::vec3& v) {
         return glm::dot(v, v);
     }
 
@@ -164,5 +166,10 @@ namespace Math {
     }
     FUNC_QUALIFIER inline float square(float x) {
         return x * x;
+    }
+
+    FUNC_QUALIFIER inline float powerHeuristic(float f, float g) {
+        float f2 = f * f;
+        return f2 / (f2 + g * g);
     }
 }

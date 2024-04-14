@@ -264,8 +264,7 @@ struct Material {
             const auto specular = D * F * G / 4.0f;
 
             // BSDF
-            // return diffuse + specular;
-            return specular;
+            return diffuse + specular;
         }
         case Type::Glass: {
             const auto normal_dot_ray_source_dir = glm::dot(normal, ray_source_dir);

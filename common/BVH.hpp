@@ -145,7 +145,7 @@ void BVHAccel::getSample(RNG& rng, BVHBuildNode* node, float p, Intersection& po
         if (current->left == nullptr && current->right == nullptr)
         {
             current->triangle->Sample(rng, pos, pdf);
-            pdf *= current->area;
+            // pdf *= current->area;
             break;
         }
 
@@ -164,7 +164,8 @@ void BVHAccel::getSample(RNG& rng, BVHBuildNode* node, float p, Intersection& po
 void BVHAccel::Sample(RNG& rng, Intersection& pos, float& pdf) {
     float p = glm::sqrt(rng.sample1D()) * root->area;
     getSample(rng, root, p, pos, pdf);
-    pdf /= root->area;
+    // pdf /= root->area;
+    pdf = 1.0f / root->area;
 }
 
 

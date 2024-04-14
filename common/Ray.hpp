@@ -12,8 +12,8 @@ struct Ray
     glm::vec3 direction, direction_inv;
     double t; // transportation time,
     double t_min, t_max;
-
-    FUNC_QUALIFIER inline Ray(const glm::vec3 &ori, const glm::vec3 &dir, const double _t = 0.0) : origin(ori), direction(dir), t(_t)
+    FUNC_QUALIFIER inline Ray() {}
+    FUNC_QUALIFIER inline Ray(const glm::vec3& ori, const glm::vec3& dir, const double _t = 0.0) : origin(ori), direction(dir), t(_t)
     {
         direction_inv = glm::vec3(1. / direction.x, 1. / direction.y, 1. / direction.z);
         t_min = 0.0;

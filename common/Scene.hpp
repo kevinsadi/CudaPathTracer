@@ -29,20 +29,20 @@ public:
     glm::vec3 backgroundColor = glm::vec3(0.235294, 0.67451, 0.843137);
     int maxDepth = 1;
     float RussianRoulette = 0.8;
-    BVHAccel *bvh = nullptr;
+    BVHAccel* bvh = nullptr;
     // -----------Editor Only-----------
     // [!] as polymorphic is not supported in CUDA, currently we only allow MeshTriangle
-    std::vector<MeshTriangle *> meshes;
-    std::unordered_map<MeshTriangle *, BVHAccel *> meshBvhMap;
+    std::vector<MeshTriangle*> meshes;
+    std::unordered_map<MeshTriangle*, BVHAccel*> meshBvhMap;
     // ---------------------------------
-    MeshTriangle **meshes_data = nullptr;
-    BVHAccel **mesh_bvhs = nullptr;
+    MeshTriangle** meshes_data = nullptr;
+    BVHAccel** mesh_bvhs = nullptr;
     int num_meshes = 0;
 
     Scene(int w, int h) : width(w), height(h) {}
 
-    void Add(MeshTriangle *mesh) {
-        meshes.push_back((MeshTriangle *)mesh);
+    void Add(MeshTriangle* mesh) {
+        meshes.push_back((MeshTriangle*)mesh);
         num_meshes = meshes.size();
         meshes_data = meshes.data();
     }
@@ -50,10 +50,10 @@ public:
     // const std::vector<Object *> &get_objects() const { return objects; }
     // const std::vector<std::unique_ptr<Light>> &get_lights() const { return
     // lights; }
-    FUNC_QUALIFIER inline Intersection intersect(const Ray &ray) const;
+    FUNC_QUALIFIER inline Intersection intersect(const Ray& ray) const;
     void buildBVH();
-    FUNC_QUALIFIER inline glm::vec3 castRay(RNG &rng, const Ray &eyeRay) const;
-    FUNC_QUALIFIER inline void sampleLight(RNG &rng, Intersection &pos, float &pdf) const;
+    FUNC_QUALIFIER inline glm::vec3 castRay(RNG& rng, const Ray& eyeRay) const;
+    FUNC_QUALIFIER inline void sampleLight(RNG& rng, Intersection& pos, float& pdf) const;
     // FUNC_QUALIFIER inline bool trace(const Ray& ray, const
     // std::vector<Object*>& objects, float& tNear, uint32_t& index, Object**
     // hitObject); std::tuple<glm::vec3, glm::vec3> HandleAreaLight(const
@@ -70,8 +70,8 @@ public:
     // std::vector<std::unique_ptr<Light>> lights;
 
     // Compute reflection direction
-    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3 &I,
-                                            const glm::vec3 &N) const {
+    FUNC_QUALIFIER inline glm::vec3 reflect(const glm::vec3& I,
+        const glm::vec3& N) const {
         return I - 2 * glm::dot(I, N) * N;
     }
 
@@ -83,11 +83,11 @@ public:
     CUDA_PORTABLE(Scene);
 };
 
-Intersection Scene::intersect(const Ray &ray) const {
+Intersection Scene::intersect(const Ray& ray) const {
     return this->bvh->Intersect(ray);
 }
 
-void Scene::sampleLight(RNG &rng, Intersection &pos, float &pdf) const {
+void Scene::sampleLight(RNG& rng, Intersection& pos, float& pdf) const {
     float emit_area_sum = 0;
     // for (uint32_t k = 0; k < objects.size(); ++k) {
     //     auto object = objects[k];
@@ -139,12 +139,14 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
     }
     for (int depth = 1; depth <= this->maxDepth; depth++) {
         // direct lighting
+        float lightSamplePdf = 0.0f;
+        glm::vec3 lightSampleRadiance(0.0f);
         if (material.type != Material::Type::Glass) {
             // importance sampling: instead of sampling all ray directions - sampling over all solid angles dw,
             // which lead to many rays wasted, we sample over all light sources - sampling over all light areas dA
             Intersection lightSample;
-            float lightPdf;
-            sampleLight(rng, lightSample, lightPdf);
+            // float lightPdf;
+            sampleLight(rng, lightSample, lightSamplePdf);
             glm::vec3 p = intersec.coords;
             glm::vec3 x = lightSample.coords;
             glm::vec3 wo = -ray.direction;
@@ -158,7 +160,7 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
                 float cos_theta_prime = Math::satDot(lightSample.normal, -wi);
                 float r2 = glm::dot(x - p, x - p);
                 // dw = dA * (cos_theta_prime / r2)
-                accRadiance += throughput * emit * bsdf * cos_theta * cos_theta_prime / r2 / lightPdf;
+                accRadiance += throughput * emit * bsdf * cos_theta * cos_theta_prime / r2 / lightSamplePdf;
             }
         }
         // indirect lighting
@@ -166,14 +168,14 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
         glm::vec3 wi = material.sample(rng, wo, intersec.normal);
         glm::vec3 p = intersec.coords;
         glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
-        float indirectPdf = material.pdf(wi, wo, intersec.normal);
+        float bsdfSamplePdf = material.pdf(wi, wo, intersec.normal);
         float cos_theta = Math::absDot(intersec.normal, wi);
 
-        if (indirectPdf < Epsilon5) {
+        if (bsdfSamplePdf < Epsilon5) {
             break;
         }
 
-        throughput *= bsdf * cos_theta / indirectPdf;
+        throughput *= bsdf * cos_theta / bsdfSamplePdf;
         ray = Ray(p + wi * Epsilon5, wi);
         intersec = Scene::intersect(ray);
         material = intersec.m;
@@ -186,6 +188,9 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
         if (material.emitting()) {
             break;
         }
+    }
+    if (isnan(accRadiance.x) || isnan(accRadiance.y) || isnan(accRadiance.z) || isinf(accRadiance.x) || isinf(accRadiance.y) || isinf(accRadiance.z)) {
+        return glm::vec3(0.0f);
     }
     return accRadiance;
 }
