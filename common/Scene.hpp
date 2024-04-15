@@ -15,6 +15,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include <iostream>
 
 
 class Scene {
@@ -83,7 +84,7 @@ public:
     };
     static Scene CreateBuiltinScene(BuiltinScene sceneId, int maxDepth);
 
-    Material GetTexturedMaterial(Intersection &intersection);
+    Material GetTexturedMaterial(Intersection &intersection) const;
 
     CUDA_PORTABLE(Scene);
 };
@@ -130,7 +131,10 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
 
     Ray ray = eyeRay;
     Intersection intersec = Scene::intersect(ray);
-    Material material = intersec.m;
+    Material material = this->GetTexturedMaterial(intersec);
+    // if (intersec.uv.x > 0 || intersec.uv.y > 0) {
+    //     std::cout << intersec.uv.x << " " << intersec.uv.y << std::endl;
+    // }
 
     if (!intersec.happened) {
         // sample envmap

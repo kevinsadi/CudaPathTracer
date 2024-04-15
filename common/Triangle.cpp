@@ -52,6 +52,11 @@ MeshTriangle::MeshTriangle(const std::string& filename, Material& mt) {
         triangles[triangle_index].t0 = stCoordinates[i];
         triangles[triangle_index].t1 = stCoordinates[i+1];
         triangles[triangle_index].t2 = stCoordinates[i+2];
+
+        if (stCoordinates[i].x > 0) {
+            std::cout << stCoordinates[i].x << std::endl;
+        }
+
         area += triangles[triangle_index].area;
         ++triangle_index;
     }

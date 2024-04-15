@@ -115,7 +115,7 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
 }
 
 
-Material Scene::GetTexturedMaterial(Intersection &intersection) {
+Material Scene::GetTexturedMaterial(Intersection &intersection) const {
     Material mat = intersection.m;
     if (mat.baseColorMapId != NullTextureId) {
         mat.baseColor = mTextures[mat.baseColorMapId]->linearSample(intersection.uv);
