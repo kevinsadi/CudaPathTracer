@@ -85,6 +85,9 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         Material white;
         white._albedo = glm::vec3(0.725f, 0.71f, 0.68f);
         white._ior = 0.f;
+        const std::string woodTexture("textures/wood_floor_diff_4k.jpg");
+        Image* image = new Image(woodTexture); 
+        scene.mTextures.push_back(new Image(woodTexture));
         white.baseColorMapId = 0;
 
         Material light;

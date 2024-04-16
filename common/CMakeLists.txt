@@ -9,6 +9,9 @@ set(COMMON_SOURCES
     ${PROJECT_SOURCE_DIR}/common/Triangle.cpp
     ${PROJECT_SOURCE_DIR}/common/Scene.cpp
     ${PROJECT_SOURCE_DIR}/common/Scene.hpp
+    ${PROJECT_SOURCE_DIR}/common/Image.cpp
+    ${PROJECT_SOURCE_DIR}/common/Image.hpp
+    ${PROJECT_SOURCE_DIR}/common/stb_image.h
     ${PROJECT_SOURCE_DIR}/common/BVH.cpp
     ${PROJECT_SOURCE_DIR}/common/BVH.hpp
     ${PROJECT_SOURCE_DIR}/common/Bounds3.hpp
