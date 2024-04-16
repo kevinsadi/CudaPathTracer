@@ -80,3 +80,12 @@ TODO
 ## Future Work
 
 - [ ] Building BVH on GPU (LBVH <https://developer.nvidia.com/blog/thinking-parallel-part-iii-tree-construction-gpu/>)
+
+## Gallery
+
+![Multiple Importance Sampling](gallery/mis.png)
+
+![Texturing](gallery/TextureTest.png)
+
+
+### Strong Scaling
