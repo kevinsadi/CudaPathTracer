@@ -116,3 +116,11 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         throw std::runtime_error("Unsupported sceneId");
     }
 }
+
+Material Scene::GetTexturedMaterial(Intersection &intersection) const {
+    Material mat = intersection.m;
+    if (mat.baseColorMapId != -1) {
+        mat._albedo = mTextures[mat.baseColorMapId]->linearSample(intersection.uv);
+    }
+    return mat;
+}

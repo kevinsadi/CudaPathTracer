@@ -33,6 +33,18 @@
 
 Now, view the output image in the `out` directory at root.
 
+The commands are similar for running the gpu_path_tracer. Ensure that your GPU can support up until 6.5 compute, and if not, change it within `gpu_path_tracer/CMakeLists.txt`.
+
+```bash
+./scripts/setup.bat
+
+./scripts/run.bat gpu_path_tracer 
+# or
+./scripts/run.bat gpu_path_tracer <SPP>
+# or
+./scripts/run.bat gpu_path_tracer <SPP> <MaxDepth>
+```
+
 ## Features
 
 TODO

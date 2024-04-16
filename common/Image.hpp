@@ -10,6 +10,9 @@ public:
     Image(const std::string& path);
     ~Image();
 
+    glm::vec3 getTexel(int x, int y);
+    glm::vec3 linearSample(glm::vec2 uv);
+
 private:
     int mWidth;
     int mHeight;

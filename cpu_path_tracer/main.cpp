@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
         maxDepth = atoi(argv[2]);
 
     // Change the definition here to change resolution
-    Scene scene = Scene::CreateBuiltinScene(Scene::TextureTest, maxDepth);
+    Scene scene = Scene::CreateBuiltinScene(Scene::CornellBox, maxDepth);
 
 #if defined(_OPENMP)
     std::cout << "OpenMP: Enabled\n";
