@@ -120,6 +120,7 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
 Material Scene::GetTexturedMaterial(Intersection &intersection) const {
     Material mat = intersection.m;
     if (mat.baseColorMapId != -1) {
+        // PROBLEM IS THIS IS NOT DEFINED BY DEFAULT WHEN ASSIGNED
         mat._albedo = mTextures[mat.baseColorMapId]->linearSample(intersection.uv);
     }
     return mat;
