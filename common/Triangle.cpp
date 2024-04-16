@@ -48,6 +48,10 @@ MeshTriangle::MeshTriangle(const std::string& filename, Material& mt) {
 
         // stored triangle soup
         triangles[triangle_index] = Triangle(face_vertices[0], face_vertices[1], face_vertices[2], mt);
+        // kevin change
+        triangles[triangle_index].t0 = stCoordinates[i];
+        triangles[triangle_index].t1 = stCoordinates[i+1];
+        triangles[triangle_index].t2 = stCoordinates[i+2];
         area += triangles[triangle_index].area;
         ++triangle_index;
     }

@@ -44,7 +44,7 @@ class Triangle : public Object
 public:
     glm::vec3 v0, v1, v2; // vertices A, B ,C , counter-clockwise order
     glm::vec3 e1, e2;     // 2 edges v1-v0, v2-v0;
-    glm::vec3 t0, t1, t2; // texture coords
+    glm::vec2 t0, t1, t2; // texture coords
     glm::vec3 normal;
     Material material;
 
@@ -185,12 +185,15 @@ FUNC_QUALIFIER inline Intersection Triangle::getIntersection(Ray ray)
     if (t_tmp < 0)
         return inter;
 
+    double w = 1 - u - v;
+
     inter.happened = true;
     inter.coords = ray(t_tmp);
     inter.normal = normal;
     inter.distance = t_tmp;
     inter.triangleArea = area;
     inter.m = this->material;
+    inter.uv = (float)w * this->t0 + (float)u * this->t1 + (float)v * this->t2;
 
     return inter;
 }
