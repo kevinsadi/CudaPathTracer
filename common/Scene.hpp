@@ -14,6 +14,8 @@
 #include <unordered_map>
 #include <vector>
 
+#include "Image.hpp"
+
 enum struct Culling { NONE, BACK, FRONT };
 
 
@@ -30,6 +32,7 @@ public:
     int maxDepth = 1;
     float RussianRoulette = 0.8;
     BVHAccel *bvh = nullptr;
+    std::vector<Image*> textures;
     // -----------Editor Only-----------
     // [!] as polymorphic is not supported in CUDA, currently we only allow MeshTriangle
     std::vector<MeshTriangle *> meshes;
@@ -77,6 +80,7 @@ public:
 
     enum BuiltinScene {
         CornellBox,
+        TextureTest
     };
     static Scene CreateBuiltinScene(BuiltinScene sceneId, int maxDepth);
 

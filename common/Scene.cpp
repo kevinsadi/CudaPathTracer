@@ -69,6 +69,44 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         scene.buildBVH();
 
         return scene; // RVO will optimize this
+    }     
+    else if (sceneId == Scene::BuiltinScene::TextureTest) {
+        Scene scene(512, 512);
+        scene.name = "TextureTest";
+        scene.maxDepth = maxDepth;
+        scene.camPos = glm::vec3(278, 273, -800);
+
+        Material red;
+        red._albedo = glm::vec3(0.63f, 0.065f, 0.05f);
+        red._ior = 0.f;
+        Material green;
+        green._albedo = glm::vec3(0.14f, 0.45f, 0.091f);
+        green._ior = 0.f;
+        Material white;
+        white._albedo = glm::vec3(0.725f, 0.71f, 0.68f);
+        white._ior = 0.f;
+        white.baseColorMapId = 0;
+
+        Material light;
+        light._emission = (8.0f * glm::vec3(0.747f + 0.058f, 0.747f + 0.258f, 0.747f) + 15.6f * glm::vec3(0.740f + 0.287f, 0.740f + 0.160f, 0.740f) + 18.4f * glm::vec3(0.737f + 0.642f, 0.737f + 0.159f, 0.737f));
+
+        auto floor = new MeshTriangle("models/cornellbox/floor.obj", white);
+        auto shortbox = new MeshTriangle("models/cornellbox/shortbox.obj", white);
+        auto tallbox = new MeshTriangle("models/cornellbox/tallbox.obj", white);
+        auto left = new MeshTriangle("models/cornellbox/left.obj", red);
+        auto right = new MeshTriangle("models/cornellbox/right.obj", green);
+        auto light_ = new MeshTriangle("models/cornellbox/light.obj", light);
+
+        scene.Add(floor);
+        scene.Add(shortbox);
+        scene.Add(tallbox);
+        scene.Add(left);
+        scene.Add(right);
+        scene.Add(light_);
+
+        scene.buildBVH();
+
+        return scene; // RVO will optimize this	        return scene; // RVO will optimize this
     }
     else
     {
