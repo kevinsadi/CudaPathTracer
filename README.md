@@ -2,7 +2,7 @@
 
 ## Environment
 
-- cuda/11.7.0-7sdye3
+- [cuda/11.7.0-7sdye3](https://developer.nvidia.com/cuda-toolkit)
 - Nvidia V100 GPU
 
 ## Getting Started
@@ -32,6 +32,18 @@
 ```
 
 Now, view the output image in the `out` directory at root.
+
+The commands are similar for running the gpu_path_tracer. Ensure that your GPU [can support up until 6.5 compute](https://developer.nvidia.com/cuda-gpus), and if not, change it within `gpu_path_tracer/CMakeLists.txt`.
+
+```bash
+./scripts/setup.bat
+
+./scripts/run.bat gpu_path_tracer 
+# or
+./scripts/run.bat gpu_path_tracer <SPP>
+# or
+./scripts/run.bat gpu_path_tracer <SPP> <MaxDepth>
+```
 
 ## Features
 
@@ -68,3 +80,12 @@ TODO
 ## Future Work
 
 - [ ] Building BVH on GPU (LBVH <https://developer.nvidia.com/blog/thinking-parallel-part-iii-tree-construction-gpu/>)
+
+## Gallery
+
+![Multiple Importance Sampling](gallery/mis.png)
+
+![Texturing](gallery/TextureTest.png)
+
+
+### Strong Scaling

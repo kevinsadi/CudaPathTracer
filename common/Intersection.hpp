@@ -29,5 +29,6 @@ struct Intersection
     double distance;
     float triangleArea;
     Material m;
+    glm::vec2 uv;
 };
 #endif // RAYTRACING_INTERSECTION_H

@@ -13,6 +13,9 @@
 #include <string>
 #include <unordered_map>
 #include <vector>
+#include <iostream>
+
+#include "Image.hpp"
 
 enum struct Culling { NONE, BACK, FRONT };
 
@@ -30,6 +33,7 @@ public:
     int maxDepth = 1;
     float RussianRoulette = 0.8;
     BVHAccel *bvh = nullptr;
+    std::vector<Image*> mTextures;
     // -----------Editor Only-----------
     // [!] as polymorphic is not supported in CUDA, currently we only allow MeshTriangle
     std::vector<MeshTriangle *> meshes;
@@ -77,8 +81,10 @@ public:
 
     enum BuiltinScene {
         CornellBox,
+        TextureTest
     };
     static Scene CreateBuiltinScene(BuiltinScene sceneId, int maxDepth);
+    Material GetTexturedMaterial(Intersection &intersection) const;
 
     CUDA_PORTABLE(Scene);
 };
@@ -121,7 +127,10 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
 
     Ray ray = eyeRay;
     Intersection intersec = Scene::intersect(ray);
-    Material material = intersec.m;
+    Material material = this->GetTexturedMaterial(intersec);
+    // if (intersec.uv.x > 0 || intersec.uv.y > 0) {
+    //     std::cout << intersec.uv.x << " " << intersec.uv.y << std::endl;
+    // }
 
     if (!intersec.happened) {
         // sample envmap

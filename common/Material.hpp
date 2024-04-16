@@ -119,6 +119,8 @@ struct Material {
     float _roughness = 1.f;              // for metallic & frosted glass
     float _ior = 0.f;                    // for frosted glass
 
+    int baseColorMapId = -1;
+
     FUNC_QUALIFIER bool emitting() {
         return glm::dot(_emission, _emission) > 0.0f;
     }
