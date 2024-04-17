@@ -272,7 +272,7 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
     // const bool enableRR = true;
     bool specularBounce = false, anyNonSpecularBounces = false;
     for (int depth = 0; depth < this->maxDepth; depth++) {
-        Intersection& intersec = Scene::intersect(ray);
+        Intersection intersec = Scene::intersect(ray);
         Material& material = intersec.m;
 
         if (!intersec.happened)
