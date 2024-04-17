@@ -20,7 +20,6 @@ private:
     thrust::device_ptr<PathSegment> pathSegments;
     thrust::device_ptr<PathSegment> termPathSegments;
     thrust::device_ptr<Intersection> intersections;
-    int num_blocks = 0;
     int num_pixels = 0;
 public:
     void SetMode(CudaRenderMode mode);

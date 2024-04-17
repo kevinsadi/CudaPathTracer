@@ -142,6 +142,35 @@ namespace Math {
             glm::cos(theta) };
     }
 
+    FUNC_QUALIFIER static glm::mat3 localRefMatrix(glm::vec3 n) {
+        glm::vec3 t = (glm::abs(n.y) > 0.9999f) ? glm::vec3(0.f, 0.f, 1.f) : glm::vec3(0.f, 1.f, 0.f);
+        glm::vec3 b = glm::normalize(glm::cross(n, t));
+        t = glm::cross(b, n);
+        return glm::mat3(t, b, n);
+    }
+
+    FUNC_QUALIFIER inline glm::vec2 toConcentricDisk(float x, float y) {
+        float r = glm::sqrt(x);
+        float theta = y * Pi * 2.0f;
+        return glm::vec2(glm::cos(theta), glm::sin(theta)) * r;
+    }
+
+    FUNC_QUALIFIER inline glm::vec3 sampleHemisphereCosine(glm::vec3 n, float rx, float ry) {
+        glm::vec2 d = toConcentricDisk(rx, ry);
+        float z = glm::sqrt(1.f - glm::dot(d, d));
+        return Math::local_to_world(glm::vec3(d, z), n);
+    }
+
+    FUNC_QUALIFIER inline glm::vec3 sampleHemisphere(glm::vec3 normal, float rx, float ry) {
+        // uniformly sample the hemisphere
+        const auto phi = 2 * Pi * rx; // [0, 2pi]
+        const auto theta = 0.5 * Pi * ry; // [0, pi/2]
+
+        // get local direction of the ray out
+        const glm::vec3 local_ray_out_dir = Math::polar_to_cartesian(theta, phi);
+        return Math::local_to_world(local_ray_out_dir, normal);
+    }
+
     FUNC_QUALIFIER inline float pow5(float x) {
         float x2 = x * x;
         return x2 * x2 * x;
@@ -169,7 +198,26 @@ namespace Math {
     }
 
     FUNC_QUALIFIER inline float powerHeuristic(float f, float g) {
+        if (glm::isinf(f))
+        {
+            return 1.0f;
+        }
+        // if (glm::isinf(g))
+        // {
+        //     return 0.0f;
+        // }
         float f2 = f * f;
         return f2 / (f2 + g * g);
+    }
+
+    FUNC_QUALIFIER inline float pdfAreaToSolidAngle(float pdf, glm::vec3 x, glm::vec3 y, glm::vec3 ny) {
+        glm::vec3 yx = x - y;
+        return pdf * glm::dot(yx, yx) / absDot(ny, glm::normalize(yx));
+    }
+
+    FUNC_QUALIFIER inline float luminance(glm::vec3 color) {
+        //const glm::vec3 T(.299f, .587f, .114f);
+        const glm::vec3 T(.2126f, .7152f, .0722f);
+        return glm::dot(color, T);
     }
 }

@@ -32,4 +32,10 @@ void StreamedPathTracing(
     Intersection* intersections,
     thrust::device_ptr<PathSegment> pathSegments,
     thrust::device_ptr<PathSegment> termPathSegments,
-    int numPixels, int maxDepth, int iter, int spp, int num_blocks);
+    int numPixels, int maxDepth, int iter, int spp);
+
+
+FUNC_QUALIFIER inline int ComputeNumBlocks(int total, int blockSize)
+{
+    return (total + blockSize - 1) / blockSize;
+}

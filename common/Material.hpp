@@ -106,6 +106,25 @@ namespace Microfacet {
         denominator *= denominator;
         return denominator == 0.0f ? 0.0f : (ior_out * ior_out * glm::abs(micro_surface_normal_dot_ray_out_dir)) / denominator;
     }
+
+    FUNC_QUALIFIER static glm::vec3 GTR2Sample(glm::vec3 n, glm::vec3 wo, float alpha, glm::vec2 r) {
+        glm::mat3 transMat = Math::localRefMatrix(n);
+        glm::mat3 transInv = glm::inverse(transMat);
+
+        glm::vec3 vh = glm::normalize((transInv * wo) * glm::vec3(alpha, alpha, 1.f));
+
+        float lenSq = vh.x * vh.x + vh.y * vh.y;
+        glm::vec3 t = lenSq > 0.f ? glm::vec3(-vh.y, vh.x, 0.f) / sqrt(lenSq) : glm::vec3(1.f, 0.f, 0.f);
+        glm::vec3 b = glm::cross(vh, t);
+
+        glm::vec2 p = Math::toConcentricDisk(r.x, r.y);
+        float s = 0.5f * (vh.z + 1.f);
+        p.y = (1.f - s) * glm::sqrt(1.f - p.x * p.x) + s * p.y;
+
+        glm::vec3 h = t * p.x + b * p.y + vh * glm::sqrt(glm::max(0.f, 1.f - glm::dot(p, p)));
+        h = glm::vec3(h.x * alpha, h.y * alpha, glm::max(0.f, h.z));
+        return glm::normalize(transMat * h);
+    }
 } // namespace Microfacet
 
 struct Material {
@@ -129,19 +148,45 @@ struct Material {
         return _emission;
     }
 
+    FUNC_QUALIFIER float alpha() {
+        return glm::sqrt(_roughness);
+    }
+
+    FUNC_QUALIFIER bool effectivelySmooth() {
+        return alpha() < 1e-3f;
+    }
+
+    FUNC_QUALIFIER bool hasSpecular() {
+        return (type == Type::MetallicWorkflow && effectivelySmooth() ) || 
+                type == Type::Glass;
+    }
+
+    FUNC_QUALIFIER void regularize() {
+        auto alpha_x = alpha();
+        if (alpha_x < 0.3f)
+        {
+            alpha_x = glm::clamp(2 * alpha_x, 0.1f, 0.3f);
+            _roughness = alpha_x * alpha_x;
+        }
+    }
+
+    FUNC_QUALIFIER glm::vec3 metallicWorkflowSample(glm::vec3 n, glm::vec3 wo, glm::vec3 r) {
+        float alpha = _roughness * _roughness;
+
+        if (r.z > (1.f / (2.f - _metallic))) {
+            return Math::sampleHemisphereCosine(n, r.x, r.y);
+        }
+        else {
+            glm::vec3 h = Microfacet::GTR2Sample(n, wo, alpha, glm::vec2(r));
+            return -glm::reflect(wo, h);
+        }
+    }
+
     // Given the direction of the observer, calculate a random ray source direction.
     FUNC_QUALIFIER glm::vec3 sample(RNG& rng, const glm::vec3 &ray_out_dir, const glm::vec3 &normal) {
         switch (type) {
         case Type::Lambertian: {
-            // uniformly sample the hemisphere
-            const auto phi = 2 * Pi * rng.sample1D(); // [0, 2pi]
-            const auto theta = 0.5 * Pi * rng.sample1D(); // [0, pi/2]
-
-            // get local direction of the ray out
-            const glm::vec3 local_ray_out_dir = Math::polar_to_cartesian(theta, phi);
-
-            // transform to the world space
-            return Math::local_to_world(local_ray_out_dir, normal);
+            return Math::sampleHemisphereCosine(normal, rng.sample1D(), rng.sample1D());
         }
         case Type::MetallicWorkflow: {
             // another importance sampling method.
@@ -171,6 +216,40 @@ struct Material {
         default:
             return glm::vec3(0.0f);
         }
+    }
+
+    FUNC_QUALIFIER static float schlickG(float cosTheta, float alpha) {
+        float a = alpha * .5f;
+        return cosTheta / (cosTheta * (1.f - a) + a);
+    }
+
+    FUNC_QUALIFIER inline float smithG(float cosWo, float cosWi, float alpha) {
+        return schlickG(glm::abs(cosWo), alpha) * schlickG(glm::abs(cosWi), alpha);
+    }
+
+    FUNC_QUALIFIER static float GTR2Distrib(float cosTheta, float alpha) {
+        if (cosTheta < 1e-6f) {
+            return 0.f;
+        }
+        float aa = alpha * alpha;
+        float nom = aa;
+        float denom = cosTheta * cosTheta * (aa - 1.f) + 1.f;
+        denom = denom * denom * Pi;
+        return nom / denom;
+    }
+
+    FUNC_QUALIFIER static float GTR2Pdf(glm::vec3 n, glm::vec3 m, glm::vec3 wo, float alpha) {
+        return GTR2Distrib(glm::dot(n, m), alpha) * schlickG(glm::dot(n, wo), alpha) *
+            Math::absDot(m, wo) / Math::absDot(n, wo);
+    }
+
+    FUNC_QUALIFIER float metallicWorkflowPdf(glm::vec3 n, glm::vec3 wo, glm::vec3 wi) {
+        glm::vec3 h = glm::normalize(wo + wi);
+        return glm::mix(
+            Math::satDot(n, wi) * PiInv,
+            GTR2Pdf(n, h, wo, _roughness * _roughness) / (4.f * Math::absDot(h, wo)),
+            1.f / (2.f - _metallic)
+        );
     }
 
     // Given the sampled ray source direction, the direction of ray out and a normal vector,
@@ -250,7 +329,7 @@ struct Material {
             const auto micro_surface_normal_dot_ray_out_dir = glm::dot(micro_surface_normal, ray_out_dir);
 
             const auto D = Microfacet::distribution(normal_dot_micro_surface_normal, Math::square(_roughness));
-            const auto G = Microfacet::geometry(micro_surface_normal_dot_ray_source_dir, micro_surface_normal_dot_ray_out_dir, _roughness);
+            const auto G = Microfacet::geometry(glm::dot(normal, ray_source_dir), glm::dot(normal, ray_out_dir), _roughness);
 
             // Metal-roughness workflow
             const glm::vec3 f0_base(0.04f);

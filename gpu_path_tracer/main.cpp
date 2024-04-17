@@ -40,16 +40,11 @@ int main(int argc, char** argv) {
     // r.SetMode(CudaRenderMode::Streamed);
     // r.SetMode(CudaRenderMode::SingleKernel);
 
-    auto start = std::chrono::system_clock::now();
+    r.PrepareRender(scene);
     r.Render(scene);
-    auto stop = std::chrono::system_clock::now();
+    r.FinishRender(scene);
 
     Utility::SavePPM("out/gpu/" + scene.name + ".ppm", r.framebuffer, scene.width, scene.height);
-
-    std::cout << "Render complete: \n";
-    std::cout << "Time taken: " << std::chrono::duration_cast<std::chrono::hours>(stop - start).count() << " hours\n";
-    std::cout << "          : " << std::chrono::duration_cast<std::chrono::minutes>(stop - start).count() << " minutes\n";
-    std::cout << "          : " << std::chrono::duration_cast<std::chrono::milliseconds>(stop - start).count() / 1000.0f << " seconds\n";
 
     return 0;
 }
