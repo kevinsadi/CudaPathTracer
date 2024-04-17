@@ -262,15 +262,19 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
     // 2. since we are using iteration instead of recursion, we use a throughput to store the
     // weight(bsdf*cos_theta/pdf) for an indirect ray
     // reference: https://sites.cs.ucsb.edu/~lingqi/teaching/resources/GAMES101_Lecture_16.pdf, p43
-    glm::vec3 accRadiance(0.f), throughput(1.f);
 
+    // path states
+    glm::vec3 accRadiance(0.f), throughput(1.f);
     Ray ray = eyeRay;
     float bsdfSamplePdf = 0.0f;
-    // const bool pathRegularization = true;
+    bool specularBounce = false, anyNonSpecularBounces = false;
+
+    // configurations
     const bool pathRegularization = false;
     const bool enableRR = false;
-    // const bool enableRR = true;
-    bool specularBounce = false, anyNonSpecularBounces = false;
+    const bool sampleDirectLighting = true;
+    const bool sampleBsdfLighting = true;
+
     for (int depth = 0; depth < this->maxDepth; depth++) {
         Intersection& intersec = Scene::intersect(ray);
         Material& material = intersec.m;
@@ -282,7 +286,7 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
         }
 
         // add emission from surface hit by ray
-        if (material.emitting())
+        if (material.emitting() && sampleBsdfLighting)
         {
             // disable MIS if the previous bounce was a specular bounce
             if (depth == 0 || specularBounce)
@@ -310,7 +314,7 @@ glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
         }
 
         // direct lighting
-        if (!specularBounce) {
+        if (!specularBounce && sampleDirectLighting) {
             Intersection lightSample;
             float lightSamplePdf = 0.0f;
             sampleLight(rng, lightSample, lightSamplePdf);
