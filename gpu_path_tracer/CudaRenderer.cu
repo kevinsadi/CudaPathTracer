@@ -77,17 +77,18 @@ void CudaRenderer::PathTrace(const Scene& scene, int iter)
 {
     if (mode == CudaRenderMode::SingleKernel)
     {
-        int num_blocks = ComputeNumBlocks(num_pixels, NUM_THREADS);
-        SingleKernelRayTracing << <num_blocks, NUM_THREADS >> > (scene_gpu, thrust::raw_pointer_cast(framebuffer_gpu), iter, this->spp);
+        int num_blocks = ComputeNumBlocks(num_pixels, num_threads);
+        SingleKernelRayTracing << <num_blocks, num_threads >> > (scene_gpu, thrust::raw_pointer_cast(framebuffer_gpu), iter, this->spp);
     }
     else if (mode == CudaRenderMode::Streamed)
     {
         StreamedPathTracing(
+            num_threads,
             scene_gpu,
             thrust::raw_pointer_cast(framebuffer_gpu),
             thrust::raw_pointer_cast(intersections),
             pathSegments,
             termPathSegments,
-            num_pixels, scene.maxDepth, iter, this->spp);
+            num_pixels, scene.maxDepth, iter, spp);
     }
 }

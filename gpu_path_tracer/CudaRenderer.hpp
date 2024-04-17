@@ -22,6 +22,7 @@ private:
     thrust::device_ptr<Intersection> intersections;
     int num_pixels = 0;
 public:
+    int num_threads = 256;
     void SetMode(CudaRenderMode mode);
     void PrepareRender(const Scene& scene);
     void Render(const Scene& scene) override;

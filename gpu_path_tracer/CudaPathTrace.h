@@ -8,8 +8,6 @@
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
 
-#define NUM_THREADS 256
-
 struct PathSegment {
     PathSegment() = default;
     FUNC_QUALIFIER inline PathSegment(const RNG& rng, const Ray& ray, const glm::vec3& throughput, const glm::vec3& radiance, int pixelIndex, int remainingBounces)
@@ -27,6 +25,7 @@ struct PathSegment {
 __global__ void SingleKernelRayTracing(Scene* scene_gpu, glm::vec3* framebuffer, int iter, int spp);
 __global__ void GenerateCameraRay(Scene* scene_gpu, PathSegment* pathSegments, int iter, int traceDepth);
 void StreamedPathTracing(
+    int num_threads,
     Scene* scene_gpu,
     glm::vec3* framebuffer_gpu,
     Intersection* intersections,

@@ -10,6 +10,7 @@
 int main(int argc, char** argv) {
     int spp = 32;
     int maxDepth = 10;
+    int num_threads = 256;
     CudaRenderMode mode = CudaRenderMode::SingleKernel;
     // read SPP & maxDepth from command line
     if (argc > 1)
@@ -18,7 +19,11 @@ int main(int argc, char** argv) {
         maxDepth = atoi(argv[2]);
     if (argc > 3)
     {
-        mode = (CudaRenderMode)atoi(argv[3]);
+        num_threads = atoi(argv[3]);
+    }
+    if (argc > 4)
+    {
+        mode = (CudaRenderMode)atoi(argv[4]);
     }
 
 
@@ -33,10 +38,13 @@ int main(int argc, char** argv) {
         mode == CudaRenderMode::SingleKernel ? "SingleKernel" 
                                                 : "Streamed"
     )<< std::endl;
+    std::cout << "CUDA #threads: " << num_threads << std::endl;
+
 
     CudaRenderer r;
     r.spp = spp;
     r.SetMode(mode);
+    r.num_threads = num_threads;
     // r.SetMode(CudaRenderMode::Streamed);
     // r.SetMode(CudaRenderMode::SingleKernel);
 

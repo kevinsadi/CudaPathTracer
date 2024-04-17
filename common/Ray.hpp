@@ -5,6 +5,7 @@
 #ifndef RAYTRACING_RAY_H
 #define RAYTRACING_RAY_H
 #include "MathUtils.hpp"
+#include "CudaPortable.hpp"
 struct Ray
 {
     // Destination = origin + t*direction
@@ -28,4 +29,21 @@ struct Ray
     //     return os;
     // }
 };
+
+// struct PathSegment
+// {
+//     PathSegment() = default;
+//     FUNC_QUALIFIER inline PathSegment(const RNG& rng, const Ray& ray, const glm::vec3& throughput, const glm::vec3& radiance, int pixelIndex, int remainingBounces)
+//         : rng(rng), ray(ray), throughput(throughput), radiance(radiance), pixelIndex(pixelIndex), remainingBounces(remainingBounces) {}
+//     RNG rng;
+//     Ray ray;
+//     // path states
+//     glm::vec3 throughput;
+//     glm::vec3 radiance;
+//     float bsdfSamplePdf = 0.0f;
+//     bool specularBounce = false;
+//     bool anyNonSpecularBounces = false;
+//     int pixelIndex;
+//     int remainingBounces; // if == 0, then the path is terminated
+// }
 #endif // RAYTRACING_RAY_H

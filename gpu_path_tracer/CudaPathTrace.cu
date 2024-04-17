@@ -168,6 +168,7 @@ struct RemoveInvalidPaths {
 };
 
 void StreamedPathTracing(
+    int num_threads,
     Scene* scene_gpu,
     glm::vec3* framebuffer_gpu,
     Intersection* intersections,
@@ -175,13 +176,13 @@ void StreamedPathTracing(
     thrust::device_ptr<PathSegment> termPathSegments,
     int numPixels, int maxDepth, int iter, int spp)
 {
-    int num_blocks_total = ComputeNumBlocks(numPixels, NUM_THREADS);
+    int num_blocks_total = ComputeNumBlocks(numPixels, num_threads);
     int numPaths = numPixels;
     auto termPaths = termPathSegments;
 
     // 1. generate eye-rays
     // loop until no rays in ray-pool
-    GenerateCameraRay << <num_blocks_total, NUM_THREADS >> > (scene_gpu, thrust::raw_pointer_cast(pathSegments), iter, maxDepth);
+    GenerateCameraRay << <num_blocks_total, num_threads >> > (scene_gpu, thrust::raw_pointer_cast(pathSegments), iter, maxDepth);
     checkCUDAError("Streamed::GenerateCameraRay");
     // cudaDeviceSynchronize();
 
@@ -192,12 +193,12 @@ void StreamedPathTracing(
         cudaMemset(intersections, 0, numPixels * sizeof(Intersection));
 
         // tracing
-        // int num_blocks_tracing = ComputeNumBlocks(numPaths, NUM_THREADS);
+        // int num_blocks_tracing = ComputeNumBlocks(numPaths, num_threads);
         int num_blocks_tracing = num_blocks_total;
-        ComputeIntersections << <num_blocks_tracing, NUM_THREADS >> > (maxDepth, numPaths, scene_gpu, thrust::raw_pointer_cast(pathSegments), intersections);
+        ComputeIntersections << <num_blocks_tracing, num_threads >> > (maxDepth, numPaths, scene_gpu, thrust::raw_pointer_cast(pathSegments), intersections);
         checkCUDAError("Streamed::ComputeIntersections");
         // cudaDeviceSynchronize();
-        IntegratePathSegment << <num_blocks_tracing, NUM_THREADS >> > (scene_gpu, thrust::raw_pointer_cast(pathSegments), intersections, numPaths);
+        IntegratePathSegment << <num_blocks_tracing, num_threads >> > (scene_gpu, thrust::raw_pointer_cast(pathSegments), intersections, numPaths);
         checkCUDAError("Streamed::IntegratePathSegment");
         // cudaDeviceSynchronize();
 
@@ -210,7 +211,7 @@ void StreamedPathTracing(
         checkCUDAError("Streamed::Compaction");
     }
 
-    FinalGather << <num_blocks_total, NUM_THREADS >> > (framebuffer_gpu, thrust::raw_pointer_cast(termPathSegments), numPixels, spp);
+    FinalGather << <num_blocks_total, num_threads >> > (framebuffer_gpu, thrust::raw_pointer_cast(termPathSegments), numPixels, spp);
     checkCUDAError("Streamed::FinalGather");
     // cudaDeviceSynchronize();
 }

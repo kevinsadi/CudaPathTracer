@@ -60,6 +60,7 @@ public:
     // lights; }
     FUNC_QUALIFIER inline Intersection intersect(const Ray& ray) const;
     void buildBVH();
+    // FUNC_QUALIFIER void TracePath(PathSegment& path);
     FUNC_QUALIFIER inline glm::vec3 castRay(RNG& rng, const Ray& eyeRay) const;
     FUNC_QUALIFIER inline void sampleLight(RNG& rng, Intersection& pos, float& pdf) const;
     // FUNC_QUALIFIER inline bool trace(const Ray& ray, const
@@ -117,6 +118,143 @@ void Scene::sampleLight(RNG& rng, Intersection& pos, float& pdf) const {
         }
     }
 }
+
+// void Scene::TracePath(PathSegment& path)
+// {
+//     // 1. Monte Carlo Path Tracing: integration from all directions can be estimated 
+//     // by averaging over radiance/pdf on each direction, I = 1/N * Σ(Li*bsdf*cos_theta/pdf)
+//     // 2. since we are using iteration instead of recursion, we use a throughput to store the
+//     // weight(bsdf*cos_theta/pdf) for an indirect ray
+//     // reference: https://sites.cs.ucsb.edu/~lingqi/teaching/resources/GAMES101_Lecture_16.pdf, p43
+//     glm::vec3& accRadiance = path.radiance;
+//     glm::vec3& throughput = path.throughput;
+
+//     Ray& ray = path.ray;
+//     float& bsdfSamplePdf = path.bsdfSamplePdf;
+//     const bool pathRegularization = false;
+//     // const bool pathRegularization = true;
+//     const bool enableRR = false;
+//     // const bool enableRR = true;
+//     bool& specularBounce = path.specularBounce;
+//     bool& anyNonSpecularBounces = path.anyNonSpecularBounces;
+    
+//     if (path.remainingBounces == 0)
+//     {
+//         return;
+//     }
+//     Intersection& intersec = Scene::intersect(ray);
+//     Material& material = intersec.m;
+
+//     if (!intersec.happened)
+//     {
+//         // sample envmap
+//         path.remainingBounces = 0;
+//         return;
+//     }
+
+//     // add emission from surface hit by ray
+//     if (material.emitting())
+//     {
+//         // disable MIS if the previous bounce was a specular bounce
+//         if (depth == 0 || specularBounce)
+//         {
+//             accRadiance += throughput * material.emission();
+//         }
+//         else
+//         {
+//             glm::vec3 radiance = material.emission();
+
+//             // float lightPdf = Math::pdfAreaToSolidAngle(
+//             //     Math::luminance(radiance) * 2.f * glm::pi<float>() * intersec.triangleArea / sumLightPower,
+//             //     ray.origin, intersec.coords, intersec.normal
+//             // );
+//             auto lightPdf = Math::luminance(radiance) * 2.f * glm::pi<float>() * intersec.triangleArea / sumLightPower;
+            
+//             float weight = Math::powerHeuristic(bsdfSamplePdf, lightPdf);
+//             accRadiance += throughput * radiance * weight;
+//         }
+//     }
+
+//     if (pathRegularization && anyNonSpecularBounces)
+//     {
+//         material.regularize();
+//     }
+
+//     // direct lighting
+//     if (!specularBounce) {
+//         Intersection lightSample;
+//         float lightSamplePdf = 0.0f;
+//         sampleLight(path.rng, lightSample, lightSamplePdf);
+//         if (lightSamplePdf > 0.0f)
+//         {
+//             glm::vec3 p = intersec.coords;
+//             glm::vec3 x = lightSample.coords;
+//             glm::vec3 wo = -ray.direction;
+//             glm::vec3 wi = glm::normalize(x - p);
+//             Ray shadowRay(p + wi * Epsilon5, wi);
+//             Intersection shadowIntersec = Scene::intersect(shadowRay);
+//             if (shadowIntersec.distance - glm::length(x - p) > -Epsilon4) {
+//                 glm::vec3 radiance = lightSample.emit;
+//                 glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
+//                 float cos_theta = Math::satDot(intersec.normal, wi);
+//                 float cos_theta_prime = Math::satDot(lightSample.normal, -wi);
+//                 float r2 = glm::dot(x - p, x - p);
+//                 float bsdfPdf = material.pdf(wi, wo, intersec.normal);
+//                 // float weight = Math::powerHeuristic(lightSamplePdf, bsdfPdf);
+//                 float lightPdf = Math::luminance(radiance) * 2.f * glm::pi<float>() * lightSample.triangleArea / sumLightPower;
+//                 float weight = Math::powerHeuristic(lightPdf, bsdfPdf);
+//                 // float lightPdf = Math::pdfAreaToSolidAngle(
+//                 //     Math::luminance(radiance) * 2.f * glm::pi<float>() * lightSample.triangleArea / sumLightPower,
+//                 //     p, x, lightSample.normal
+//                 // );
+//                 // float weight = Math::powerHeuristic(lightPdf, bsdfSamplePdf);
+//                 // float weight = Math::powerHeuristic(lightPdf, bsdfSamplePdf);
+//                 // float weight = 1.0f;
+//                 // accRadiance += throughput * emit * bsdf * cos_theta * cos_theta_prime / r2 / lightSamplePdf;
+//                 accRadiance += throughput * radiance * bsdf * cos_theta * cos_theta_prime / r2 / lightSamplePdf * weight;
+//             }
+//         }
+//     }
+
+//     // sample bsdf to get new path direction
+//     // bool deltaSample = !specularBounce; // not consider transmission yet
+//     bool deltaSample = false; // not consider transmission yet
+//     glm::vec3 wo = -ray.direction;
+//     glm::vec3 wi = material.sample(path.rng, wo, intersec.normal);
+//     glm::vec3 p = intersec.coords;
+//     glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
+//     bsdfSamplePdf = material.pdf(wi, wo, intersec.normal);
+//     if (bsdfSamplePdf < Epsilon5) {
+//         break;
+//     }
+
+//     // update path state
+//     specularBounce = material.hasSpecular();
+//     anyNonSpecularBounces |= !specularBounce;
+//     float cos_theta = Math::absDot(intersec.normal, wi);
+//     throughput *= bsdf
+//         * (deltaSample ? 1.f : cos_theta)
+//         / bsdfSamplePdf;
+//     // generate new ray
+//     ray = Ray(p + wi * Epsilon5, wi);
+
+//     // Russian Roulette
+//     if (enableRR)
+//     {
+//         auto rrProb = path.rng.sample1D();
+//         if (depth > 1) {
+//             float q = 1 - RussianRoulette;
+//             if (rrProb < q)
+//             {
+//                 break;
+//             }
+//             throughput /= (1.f - q);
+//         }
+//     }
+//     if (isnan(accRadiance.x) || isnan(accRadiance.y) || isnan(accRadiance.z) || isinf(accRadiance.x) || isinf(accRadiance.y) || isinf(accRadiance.z)) {
+//         accRadiance = glm::vec3(0.0f);
+//     }
+// }
 
 glm::vec3 Scene::castRay(RNG& rng, const Ray& eyeRay) const {
     // 1. Monte Carlo Path Tracing: integration from all directions can be estimated 
