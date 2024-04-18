@@ -4,11 +4,11 @@ enable_language(CUDA)
 
 set(SRC
     ${SRCROOT}/CudaPortable.cu
-    # ${SRCROOT}/CudaPathTrace.h
-    # ${SRCROOT}/CudaPathTrace.cu
+    ${SRCROOT}/CudaPathTrace.h
+    ${SRCROOT}/CudaPathTrace.cu
     ${SRCROOT}/CudaRenderer.hpp
-    # ${SRCROOT}/CudaRenderer.cpp
     ${SRCROOT}/CudaRenderer.cu
+    ${SRCROOT}/CudaUtils.h
     ${SRCROOT}/main.cpp
     # add more here
 )

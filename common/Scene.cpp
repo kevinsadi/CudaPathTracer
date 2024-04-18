@@ -7,7 +7,7 @@
 #include "MathUtils.hpp"
 
 void Scene::buildBVH() {
-    printf(" - Generating BVH...\n\n");
+    // printf(" - Generating BVH...\n\n");
     std::vector<Object*> objects;
     for (auto& mesh : meshes) {
         objects.push_back(mesh);
@@ -44,11 +44,12 @@ Scene Scene::CreateBuiltinScene(Scene::BuiltinScene sceneId, int maxDepth)
         metal.type = Material::Type::MetallicWorkflow;
         metal._albedo = glm::vec3(0.7, 0.5, 0.2);
         metal._metallic = 1.f;
-        metal._roughness = 0.0050;
+        metal._roughness = 0.005f;
 
         Material glass;
-        glass.type = Material::Type::Glass;
-        glass._roughness = 0.002f;
+        glass.type = Material::Type::Lambertian;
+        // glass._roughness = 0.002f;
+        glass._roughness = 0.2f;
         glass._ior = 1.5f;
 
 

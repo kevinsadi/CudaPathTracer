@@ -76,7 +76,9 @@ public:
         float x = glm::sqrt(rng.sample1D()), y = rng.sample1D();
         pos.coords = v0 * (1.0f - x) + v1 * (x * (1.0f - y)) + v2 * (x * y);
         pos.normal = this->normal;
-        pdf = 1.0f / area;
+        pos.triangleArea = this->area;
+        // pdf = 1.0f / area;
+        // pdf = 1.0f;
     }
 
     CUDA_PORTABLE(Triangle);
