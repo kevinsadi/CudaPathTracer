@@ -8,18 +8,6 @@
 #include <cuda_runtime.h>
 #include <thrust/device_ptr.h>
 
-struct PathSegment {
-    PathSegment() = default;
-    FUNC_QUALIFIER inline PathSegment(const RNG& rng, const Ray& ray, const glm::vec3& throughput, const glm::vec3& radiance, int pixelIndex, int remainingBounces)
-        : rng(rng), ray(ray), throughput(throughput), radiance(radiance), pixelIndex(pixelIndex), remainingBounces(remainingBounces) {}
-    RNG rng;
-    Ray ray;
-    glm::vec3 throughput;
-    glm::vec3 radiance;
-    // PrevBSDFSampleInfo prev;
-    int pixelIndex;
-    int remainingBounces;
-};
 
 
 __global__ void SingleKernelRayTracing(Scene* scene_gpu, glm::vec3* framebuffer, int iter, int spp);

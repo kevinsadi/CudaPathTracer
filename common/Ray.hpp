@@ -30,20 +30,21 @@ struct Ray
     // }
 };
 
-// struct PathSegment
-// {
-//     PathSegment() = default;
-//     FUNC_QUALIFIER inline PathSegment(const RNG& rng, const Ray& ray, const glm::vec3& throughput, const glm::vec3& radiance, int pixelIndex, int remainingBounces)
-//         : rng(rng), ray(ray), throughput(throughput), radiance(radiance), pixelIndex(pixelIndex), remainingBounces(remainingBounces) {}
-//     RNG rng;
-//     Ray ray;
-//     // path states
-//     glm::vec3 throughput;
-//     glm::vec3 radiance;
-//     float bsdfSamplePdf = 0.0f;
-//     bool specularBounce = false;
-//     bool anyNonSpecularBounces = false;
-//     int pixelIndex;
-//     int remainingBounces; // if == 0, then the path is terminated
-// }
+struct PathSegment {
+    PathSegment() = default;
+    FUNC_QUALIFIER inline PathSegment(const RNG& rng, const Ray& ray, const glm::vec3& throughput, const glm::vec3& radiance, int pixelIndex, int remainingBounces)
+        : rng(rng), ray(ray), throughput(throughput), radiance(radiance), pixelIndex(pixelIndex), remainingBounces(remainingBounces) {}
+    RNG rng;
+    Ray ray;
+
+    // path states
+    glm::vec3 throughput;
+    glm::vec3 radiance;
+    int pixelIndex; // used for gpu stream compaction, needless for cpu
+    int remainingBounces; // range from maxDpeth to 0, minus 1 each bounce, 0 means terminate
+    bool specularBounce = false; // if last bounce is specular bounce
+    bool anyNonSpecularBounces = false; // if any none specular bounce along the whole path
+    float bsdfSamplePdf = 0.0f; // last bounce bsdf sample pdf
+    int depth = 0; // current depth of the path, range from 0 to maxDepth - 1
+};
 #endif // RAYTRACING_RAY_H

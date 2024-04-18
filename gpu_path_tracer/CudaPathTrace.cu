@@ -82,68 +82,11 @@ __global__ void IntegratePathSegment(Scene* scene_gpu, PathSegment* pathSegments
     int tid = threadIdx.x + blockIdx.x * blockDim.x;
     if (tid >= numPaths) return;
 
-    PathSegment& pathSegment = pathSegments[tid];
+    // copy-paste would be faster
+    PathSegment pathSegment = pathSegments[tid];
     Intersection& intersec = intersections[tid];
-    Material& material = intersec.m;
-    RNG& rng = pathSegment.rng;
-    Ray& ray = pathSegment.ray;
-    glm::vec3& throughput = pathSegment.throughput;
-    glm::vec3& accRadiance = pathSegment.radiance;
-
-    // sanity check
-    if (!intersec.happened)
-    {
-        // sample envmap
-        pathSegment.remainingBounces = 0;
-        return;
-    }
-    if (material.emitting())
-    {
-        // stop bouncing
-        // pathSegment.radiance = material.emission();
-        pathSegment.remainingBounces = 0;
-        return;
-    }
-
-    // compute direct lighting
-    if (material.type != Material::Type::Glass) {
-        // importance sampling: instead of sampling all ray directions - sampling over all solid angles dw,
-        // which lead to many rays wasted, we sample over all light sources - sampling over all light areas dA
-        Intersection lightSample;
-        float lightSamplePdf;
-        scene_gpu->sampleLight(rng, lightSample, lightSamplePdf);
-        glm::vec3 p = intersec.coords;
-        glm::vec3 x = lightSample.coords;
-        glm::vec3 wo = -ray.direction;
-        glm::vec3 wi = glm::normalize(x - p);
-        Ray shadowRay(p + wi * Epsilon5, wi);
-        Intersection shadowIntersec = scene_gpu->intersect(shadowRay);
-        if (shadowIntersec.distance - glm::length(x - p) > -Epsilon4) {
-            glm::vec3 emit = lightSample.emit;
-            glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
-            float cos_theta = Math::satDot(intersec.normal, wi);
-            float cos_theta_prime = Math::satDot(lightSample.normal, -wi);
-            float r2 = glm::dot(x - p, x - p);
-            // dw = dA * (cos_theta_prime / r2)
-            accRadiance += throughput * emit * bsdf * cos_theta * cos_theta_prime / r2 / lightSamplePdf;
-        }
-    }
-
-    // indirect lighting
-    glm::vec3 wo = -ray.direction;
-    glm::vec3 wi = material.sample(rng, wo, intersec.normal);
-    glm::vec3 p = intersec.coords;
-    glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
-    float bsdfSamplePdf = material.pdf(wi, wo, intersec.normal);
-    float cos_theta = Math::absDot(intersec.normal, wi);
-
-    if (bsdfSamplePdf < Epsilon5) {
-        pathSegment.remainingBounces = 0;
-        return;
-    }
-
-    throughput *= bsdf * cos_theta / bsdfSamplePdf;
-    ray = Ray(p + wi * Epsilon5, wi);
+    scene_gpu->TracePath(pathSegment, intersec);
+    pathSegments[tid] = pathSegment;
 }
 
 __global__ void FinalGather(glm::vec3* framebuffer_gpu, PathSegment* termPathSegments, int numPaths, int spp)
@@ -193,8 +136,8 @@ void StreamedPathTracing(
         cudaMemset(intersections, 0, numPixels * sizeof(Intersection));
 
         // tracing
-        // int num_blocks_tracing = ComputeNumBlocks(numPaths, num_threads);
-        int num_blocks_tracing = num_blocks_total;
+        int num_blocks_tracing = ComputeNumBlocks(numPaths, num_threads);
+        // int num_blocks_tracing = num_blocks_total;
         ComputeIntersections << <num_blocks_tracing, num_threads >> > (maxDepth, numPaths, scene_gpu, thrust::raw_pointer_cast(pathSegments), intersections);
         checkCUDAError("Streamed::ComputeIntersections");
         // cudaDeviceSynchronize();
