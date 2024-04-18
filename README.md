@@ -1,4 +1,7 @@
 # Towards Real-Time Path Tracing
+![](./img/cornell_mis_1kres_4kspp_20depth.png)
+
+<p align="center">Cornell Box,1k*1k resolution, 4096spp, 20traceDepth</p><br>
 
 ## Environment
 
@@ -35,7 +38,10 @@ Now, view the output image in the `out` directory at root.
 
 ## Features
 
-TODO
+### Multiple Importance Sampling
+![](./img/mis.png)
+
+<p align="center">MIS</p><br>
 
 ## Roadmap
 
