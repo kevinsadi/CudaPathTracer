@@ -84,7 +84,7 @@ __global__ void IntegratePathSegment(Scene* scene_gpu, PathSegment* pathSegments
 
     // copy-paste would be faster
     PathSegment pathSegment = pathSegments[tid];
-    Intersection& intersec = intersections[tid];
+    Intersection intersec = intersections[tid];
     scene_gpu->TracePath(pathSegment, intersec);
     pathSegments[tid] = pathSegment;
 }

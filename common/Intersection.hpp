@@ -26,7 +26,7 @@ struct Intersection
     glm::vec3 tcoords;
     glm::vec3 normal;
     glm::vec3 emit;
-    double distance;
+    double distance; // actually time, how long the ray traverls
     float triangleArea;
     Material m;
 };

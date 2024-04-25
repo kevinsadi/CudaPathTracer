@@ -25,11 +25,12 @@ void Renderer::Render(const Scene& scene)
     // change the spp value to change sample ammount
     std::cout << "SPP: " << this->spp << "\n";
     std::cout << "Max Depth: " << scene.maxDepth << "\n";
-    for (uint32_t j = 0; j < scene.height; ++j) {
-        for (uint32_t i = 0; i < scene.width; ++i) {
-            // generate primary ray direction
-#pragma omp parallel for
-            for (int k = 0; k < this->spp; k++){
+    for (int k = 0; k < this->spp; k++){
+#pragma omp parallel for collapse(2) private (m)
+        for (uint32_t j = 0; j < scene.height; ++j) {
+            for (uint32_t i = 0; i < scene.width; ++i) {
+                int m = j * scene.width + i;
+                // generate primary ray direction
                 RNG rng = RNG(k, m, 0, nullptr);
                 // jitter sampling for anti-aliasing
                 float bias = rng.sample1D();
@@ -38,9 +39,13 @@ void Renderer::Render(const Scene& scene)
                 glm::vec3 dir = glm::normalize(glm::vec3(-x, y, 1));
                 framebuffer[m] += scene.castRay(rng, Ray(eye_pos, dir)) / (float)this->spp;  
             }
-            m++;
         }
-        Utility::UpdateProgress(j / (float)scene.height);
+#ifdef _OPENMP
+        if (omp_get_thread_num() == 0)
+#endif
+        {
+            Utility::UpdateProgress(k / (float)this->spp);
+        }
     }
     Utility::UpdateProgress(1.f);
 }

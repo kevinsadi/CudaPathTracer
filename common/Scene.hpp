@@ -198,10 +198,13 @@ void Scene::TracePath(PathSegment& path, Intersection& intersec) const
                 glm::vec3 p = intersec.coords;
                 glm::vec3 x = lightSample.coords;
                 glm::vec3 wo = -ray.direction;
-                glm::vec3 wi = glm::normalize(x - p);
-                Ray shadowRay(p + wi * Epsilon5, wi);
+                glm::vec3 px = x - p;
+                glm::vec3 wi = glm::normalize(px);
+                Ray shadowRay(p + wi * Epsilon5, wi, true, glm::length(px));
+                // Ray shadowRay(p + wi * Epsilon5, wi);
                 Intersection shadowIntersec = Scene::intersect(shadowRay);
-                if (shadowIntersec.distance - glm::length(x - p) > -Epsilon4) {
+                if (!shadowIntersec.happened) {
+                // if (shadowIntersec.distance > glm::length(px) - Epsilon4) {
                     glm::vec3 radiance = lightSample.emit;
                     glm::vec3 bsdf = material.bsdf(wi, wo, intersec.normal);
                     float cos_theta = Math::satDot(intersec.normal, wi);

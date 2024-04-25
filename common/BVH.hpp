@@ -116,8 +116,23 @@ Intersection BVHAccel::getIntersection(BVHBuildNode* node, const Ray& ray) const
             {
                 Intersection hit = current->mesh ? current->meshBvhRoot->Intersect(ray)
                     : current->triangle->getIntersection(ray);
-                if (hit.distance < isect.distance)
-                    isect = hit;
+                if (hit.happened)
+                {
+                    if (ray.shadowTest)
+                    {
+                        if (hit.distance < ray.shadowDistance - Epsilon4)
+                        {
+                            return hit;
+                        }
+                    }
+                    else 
+                    {
+                        if (hit.distance < isect.distance)
+                        {
+                            isect = hit;
+                        }
+                    }
+                }
             }
             current = current->nextIfHit;
         }

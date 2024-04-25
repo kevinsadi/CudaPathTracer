@@ -11,8 +11,12 @@
 #define __stdcall
 #endif
 
+#ifdef DEBUG_CUDA
 #define FILENAME (strrchr(__FILE__, '/') ? strrchr(__FILE__, '/') + 1 : __FILE__)
 #define checkCUDAError(msg) checkCUDAErrorFn(msg, FILENAME, __LINE__)
+#else
+#define checkCUDAError(msg) 
+#endif
 
 static void checkCUDAErrorFn(const char* msg, const char* file, int line) {
 #if ERRORCHECK
